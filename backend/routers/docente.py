@@ -5,7 +5,7 @@ from datetime import datetime
 import hashlib
 import os
 from pathlib import Path
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ExifTags
 import io
 import base64
 from models.schemas import (
@@ -29,6 +29,44 @@ UPLOAD_DIR = Path("uploads/evidencias")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR = Path("uploads/temp")
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Función para corregir orientación EXIF
+def correct_image_orientation(img):
+    """Corrige la orientación de la imagen según metadatos EXIF"""
+    try:
+        # Obtener información EXIF
+        exif = img._getexif()
+        if exif is None:
+            return img
+        
+        # Buscar el tag de orientación
+        orientation_key = None
+        for tag, value in ExifTags.TAGS.items():
+            if value == 'Orientation':
+                orientation_key = tag
+                break
+        
+        if orientation_key is None:
+            return img
+            
+        orientation = exif.get(orientation_key)
+        
+        # Aplicar rotación según orientación EXIF
+        if orientation == 3:
+            img = img.rotate(180, expand=True)
+        elif orientation == 6:
+            img = img.rotate(270, expand=True)
+        elif orientation == 8:
+            img = img.rotate(90, expand=True)
+            
+        print(f"   📐 Orientación EXIF corregida: {orientation}")
+        
+    except (AttributeError, KeyError, IndexError, TypeError) as e:
+        # Si no hay EXIF o hay error, devolver imagen original
+        print(f"   ℹ️ No se pudo leer EXIF o no tiene orientación: {e}")
+        pass
+    
+    return img
 
 # =============== PERFIL DEL DOCENTE ===============
 
@@ -291,6 +329,14 @@ async def pixelar_area_y_guardar(
         # Abrir imagen
         img = Image.open(temp_path)
         
+        print(f"\n📷 DEBUG PROCESAMIENTO IMAGEN:")
+        print(f"   Dimensión original: {img.width}x{img.height}")
+        print(f"   Formato: {img.format}")
+        
+        # PASO 1: Corregir orientación EXIF primero
+        img = correct_image_orientation(img)
+        print(f"   Dimensión después de orientación: {img.width}x{img.height}")
+        
         print(f"\n✂️ DEBUG RECORTE:")
         print(f"   crop_area recibido: {pixelate_area}")
         print(f"   Tipo: {type(pixelate_area)}")
@@ -298,7 +344,7 @@ async def pixelar_area_y_guardar(
             print(f"   Width: {pixelate_area.get('width', 0)}")
             print(f"   Height: {pixelate_area.get('height', 0)}")
         
-        # Si hay área para recortar
+        # PASO 2: Si hay área para recortar
         if pixelate_area and pixelate_area.get("width", 0) > 0:
             y = int(pixelate_area["y"])
             height = int(pixelate_area["height"])
