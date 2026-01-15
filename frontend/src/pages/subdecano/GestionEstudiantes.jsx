@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import api from '../../services/api';
-import './GestionDocentes.css';
+import './GestionDocentes.css'; // Reutilizamos los estilos
 
-const GestionDocentes = () => {
-  const [docentes, setDocentes] = useState([]);
+const GestionEstudiantes = () => {
+  const [estudiantes, setEstudiantes] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -15,7 +15,7 @@ const GestionDocentes = () => {
     email: '',
     nombre: '',
     carrera: 'Ingeniería de Software',
-    materias: []
+    materias_cursando: []
   });
 
   useEffect(() => {
@@ -24,11 +24,11 @@ const GestionDocentes = () => {
 
   const cargarDatos = async () => {
     try {
-      const [docentesRes, materiasRes] = await Promise.all([
-        api.get('/subdecano/docentes'),
+      const [estudiantesRes, materiasRes] = await Promise.all([
+        api.get('/subdecano/estudiantes'),
         api.get('/subdecano/materias')
       ]);
-      setDocentes(docentesRes.data);
+      setEstudiantes(estudiantesRes.data);
       setMaterias(materiasRes.data);
     } catch (error) {
       console.error('Error:', error);
@@ -41,11 +41,11 @@ const GestionDocentes = () => {
     e.preventDefault();
     try {
       if (editando) {
-        await api.put(`/subdecano/docentes/${editando}`, formData);
-        alert('✅ Docente actualizado');
+        await api.put(`/subdecano/estudiantes/${editando}`, formData);
+        alert('✅ Estudiante actualizado');
         setShowModal(false);
       } else {
-        const res = await api.post('/subdecano/docentes', formData);
+        const res = await api.post('/subdecano/estudiantes', formData);
         setPasswordTemporal(res.data.password_temporal);
         setShowPasswordModal(true);
         setShowModal(false);
@@ -54,26 +54,26 @@ const GestionDocentes = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.detail || '❌ Error al guardar docente');
+      alert(error.response?.data?.detail || '❌ Error al guardar estudiante');
     }
   };
 
-  const editar = (docente) => {
-    setEditando(docente.id);
+  const editar = (estudiante) => {
+    setEditando(estudiante.id);
     setFormData({
-      email: docente.email,
-      nombre: docente.nombre,
-      carrera: docente.carrera,
-      materias: docente.materias
+      email: estudiante.email,
+      nombre: estudiante.nombre,
+      carrera: estudiante.carrera,
+      materias_cursando: estudiante.materias_cursando
     });
     setShowModal(true);
   };
 
   const eliminar = async (id) => {
-    if (!window.confirm('¿Desactivar este docente?')) return;
+    if (!window.confirm('¿Desactivar este estudiante?')) return;
     try {
-      await api.delete(`/subdecano/docentes/${id}`);
-      alert('✅ Docente desactivado');
+      await api.delete(`/subdecano/estudiantes/${id}`);
+      alert('✅ Estudiante desactivado');
       cargarDatos();
     } catch (error) {
       console.error('Error:', error);
@@ -86,21 +86,21 @@ const GestionDocentes = () => {
       email: '',
       nombre: '',
       carrera: 'Ingeniería de Software',
-      materias: []
+      materias_cursando: []
     });
     setEditando(null);
   };
 
   const toggleMateria = (materiaId) => {
-    if (formData.materias.includes(materiaId)) {
+    if (formData.materias_cursando.includes(materiaId)) {
       setFormData({
         ...formData,
-        materias: formData.materias.filter(m => m !== materiaId)
+        materias_cursando: formData.materias_cursando.filter(m => m !== materiaId)
       });
     } else {
       setFormData({
         ...formData,
-        materias: [...formData.materias, materiaId]
+        materias_cursando: [...formData.materias_cursando, materiaId]
       });
     }
   };
@@ -112,19 +112,19 @@ const GestionDocentes = () => {
 
   if (loading) {
     return (
-      <Layout title="Gestión de Docentes">
+      <Layout title="Gestión de Estudiantes">
         <div className="text-center mt-4"><span className="loading"></span></div>
       </Layout>
     );
   }
 
   return (
-    <Layout title="Gestión de Docentes">
+    <Layout title="Gestión de Estudiantes">
       <div className="gestion-container">
         <div className="gestion-header">
-          <h2>👨‍🏫 Gestión de Docentes</h2>
+          <h2>👨‍🎓 Gestión de Estudiantes</h2>
           <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary">
-            ➕ Nuevo Docente
+            ➕ Nuevo Estudiante
           </button>
         </div>
 
@@ -143,35 +143,35 @@ const GestionDocentes = () => {
               </tr>
             </thead>
             <tbody>
-              {docentes.map(docente => (
-                <tr key={docente.id}>
-                  <td>{docente.id}</td>
-                  <td>{docente.nombre}</td>
-                  <td>{docente.email}</td>
-                  <td>{docente.carrera}</td>
+              {estudiantes.map(est => (
+                <tr key={est.id}>
+                  <td>{est.id}</td>
+                  <td>{est.nombre}</td>
+                  <td>{est.email}</td>
+                  <td>{est.carrera}</td>
                   <td>
                     <div className="materias-list">
-                      {docente.materias.map(matId => {
+                      {est.materias_cursando.map(matId => {
                         const mat = materias.find(m => m.id === matId);
                         return mat ? <span key={matId} className="materia-tag">{mat.codigo}</span> : null;
                       })}
                     </div>
                   </td>
                   <td>
-                    <span className={`badge ${docente.activo ? 'badge-success' : 'badge-danger'}`}>
-                      {docente.activo ? '✓ Activo' : '✗ Inactivo'}
+                    <span className={`badge ${est.activo ? 'badge-success' : 'badge-danger'}`}>
+                      {est.activo ? '✓ Activo' : '✗ Inactivo'}
                     </span>
                   </td>
                   <td>
-                    {docente.primer_login ? 
+                    {est.primer_login ? 
                       <span className="badge badge-warning">⚠️ Pendiente</span> : 
                       <span className="badge badge-success">✓ Completado</span>
                     }
                   </td>
                   <td>
                     <div className="acciones-btn-group">
-                      <button onClick={() => editar(docente)} className="btn btn-sm btn-secondary">✏️</button>
-                      <button onClick={() => eliminar(docente.id)} className="btn btn-sm btn-error">🗑️</button>
+                      <button onClick={() => editar(est)} className="btn btn-sm btn-secondary">✏️</button>
+                      <button onClick={() => eliminar(est.id)} className="btn btn-sm btn-error">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -185,7 +185,7 @@ const GestionDocentes = () => {
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{editando ? '✏️ Editar Docente' : '➕ Nuevo Docente'}</h3>
+                <h3>{editando ? '✏️ Editar Estudiante' : '➕ Nuevo Estudiante'}</h3>
                 <button className="btn-close" onClick={() => setShowModal(false)}>✖</button>
               </div>
               <form onSubmit={handleSubmit}>
@@ -224,13 +224,13 @@ const GestionDocentes = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Materias Asignadas</label>
+                  <label>Materias Cursando</label>
                   <div className="materias-checkbox-group">
                     {materias.map(materia => (
                       <label key={materia.id} className="checkbox-label">
                         <input
                           type="checkbox"
-                          checked={formData.materias.includes(materia.id)}
+                          checked={formData.materias_cursando.includes(materia.id)}
                           onChange={() => toggleMateria(materia.id)}
                         />
                         <span>{materia.codigo} - {materia.nombre}</span>
@@ -282,7 +282,7 @@ const GestionDocentes = () => {
                   </div>
                 </div>
                 <p className="info-text">
-                  El docente deberá cambiar su contraseña en el primer inicio de sesión.
+                  El estudiante deberá cambiar su contraseña en el primer inicio de sesión.
                 </p>
               </div>
               <div className="form-actions">
@@ -298,4 +298,4 @@ const GestionDocentes = () => {
   );
 };
 
-export default GestionDocentes;
+export default GestionEstudiantes;

@@ -10,6 +10,13 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef(null);
 
+  // Log cuando el componente se monta
+  useEffect(() => {
+    console.log('🎨 ImagePixelator montado');
+    console.log('🎨 onAreaSelected recibido:', typeof onAreaSelected);
+    console.log('🎨 imageUrl recibido:', imageUrl);
+  }, []);
+
   useEffect(() => {
     if (imageUrl && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -56,8 +63,17 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
   };
 
   const handleMouseUp = (e) => {
-    if (!isDrawing || !imageLoaded) return;
-    setIsDrawing(false);
+    console.log('🖱️ Mouse UP detectado - isDrawing:', isDrawing, 'imageLoaded:', imageLoaded);
+    
+    if (!imageLoaded) {
+      console.log('⚠️ Imagen no cargada aún');
+      return;
+    }
+    
+    if (!isDrawing) {
+      console.log('⚠️ No estaba dibujando (isDrawing = false)');
+      return;
+    }
     
     // Obtener posición final directamente del evento (no del estado)
     const endPos = getMousePos(e);
@@ -66,21 +82,34 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
     const height = Math.abs(endPos.y - startPos.y);
     
     console.log('🖱️ Mouse UP - Dimensiones:', { width, height });
-    console.log('🖱️ Posiciones:', { startPos, endPos });
+    console.log('🖱️ Posiciones:', { start: startPos, end: endPos });
     
-    if (width > 10 && height > 10) {
-      const selectionArea = {
-        x: Math.min(startPos.x, endPos.x),
-        y: Math.min(startPos.y, endPos.y),
-        width: width,
-        height: height
-      };
-      
-      console.log('✅ Área válida, enviando:', selectionArea);
-      setSelection(selectionArea);
-      onAreaSelected(selectionArea);
+    // Ahora sí, marcar como no dibujando
+    setIsDrawing(false);
+    
+    // Aceptar cualquier tamaño de área (sin validación mínima)
+    const selectionArea = {
+      x: Math.min(startPos.x, endPos.x),
+      y: Math.min(startPos.y, endPos.y),
+      width: width,
+      height: height
+    };
+    
+    console.log('✅ Área capturada, enviando:', selectionArea);
+    console.log('✅ onAreaSelected disponible?', typeof onAreaSelected);
+    setSelection(selectionArea);
+    
+    // Llamar inmediatamente a onAreaSelected
+    if (onAreaSelected && typeof onAreaSelected === 'function') {
+      console.log('📤 Llamando a onAreaSelected con:', selectionArea);
+      try {
+        onAreaSelected(selectionArea);
+        console.log('✅ onAreaSelected ejecutado exitosamente');
+      } catch (error) {
+        console.error('❌ Error al llamar onAreaSelected:', error);
+      }
     } else {
-      console.log('❌ Área demasiado pequeña, no se guarda. Width:', width, 'Height:', height);
+      console.warn('⚠️ onAreaSelected no está definido o no es función!', onAreaSelected);
     }
   };
 
@@ -115,9 +144,23 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
     );
   };
 
+  const handleMouseLeave = (e) => {
+    console.log('🚪 Mouse salió del canvas - isDrawing:', isDrawing);
+    if (isDrawing) {
+      // Si estaba dibujando, finalizar el área
+      console.log('🚪 Finalizando área al salir del canvas');
+      handleMouseUp(e);
+    }
+  };
+
   const clearSelection = () => {
+    console.log('🔄 Limpiando selección');
     setSelection(null);
-    onAreaSelected(null);
+    
+    // Llamar a onAreaSelected con null
+    if (onAreaSelected) {
+      onAreaSelected(null);
+    }
     
     // Redibujar imagen sin selección
     const canvas = canvasRef.current;
@@ -132,24 +175,26 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
     <div className="image-pixelator">
       <div className="pixelator-instructions">
         <p>
-          ✂️ <strong>Paso 1:</strong> Arrastra el mouse sobre el nombre del estudiante (desde arriba hacia abajo).
+          ✂️ <strong>Recorta la imagen:</strong> Dibuja un rectángulo sobre el área que QUIERES ELIMINAR.
         </p>
         <p>
-          ✂️ <strong>Paso 2:</strong> La imagen se recortará eliminando todo lo que esté ARRIBA del rectángulo.
+          ✂️ <strong>Cómo funciona:</strong> Se eliminará todo lo que esté ARRIBA del rectángulo (incluyendo el rectángulo).
         </p>
         <p style={{ color: '#0369a1', fontWeight: 'bold' }}>
-          💡 Tip: Dibuja el rectángulo justo DEBAJO del nombre para eliminarlo completamente.
+          💡 Tip: Dibuja el rectángulo sobre el nombre del estudiante. Se guardará lo que esté debajo.
         </p>
         {selection && (
           <div className="selection-info">
-            <span className="badge badge-success">✓ Área marcada - Se recortará todo lo de arriba. Baja y haz clic en "FINALIZAR"</span>
+            <span className="badge badge-success">
+              ✓ Área marcada ({Math.round(selection.width)} x {Math.round(selection.height)} px) - Esto y lo de arriba se eliminará
+            </span>
             <button 
               type="button"
               onClick={clearSelection} 
               className="btn btn-sm btn-outline"
               style={{ marginLeft: '10px' }}
             >
-              🔄 Redibujar
+              🔄 Limpiar
             </button>
           </div>
         )}
@@ -161,7 +206,7 @@ const ImagePixelator = ({ imageUrl, onAreaSelected }) => {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={() => setIsDrawing(false)}
+          onMouseLeave={handleMouseLeave}
           style={{ cursor: isDrawing ? 'crosshair' : 'default' }}
         />
       </div>

@@ -1,8 +1,18 @@
+/* Estilos para el componente de recorte de imagen */
 .image-pixelator {
   width: 100%;
   margin: 1rem 0;
 }
 
+.crop-instructions {
+  background: #f0f9ff;
+  border: 2px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Mantener para compatibilidad */
 .pixelator-instructions {
   background: #f0f9ff;
   border: 2px solid #3b82f6;
@@ -11,6 +21,7 @@
   margin-bottom: 1rem;
 }
 
+.crop-instructions p,
 .pixelator-instructions p {
   margin: 0;
   color: #1e40af;

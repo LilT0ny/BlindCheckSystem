@@ -28,6 +28,12 @@ class EstudianteBase(BaseModel):
 class EstudianteCreate(EstudianteBase):
     password: str
 
+class EstudianteCreateBySubdecano(BaseModel):
+    email: EmailStr
+    nombre: str
+    carrera: str
+    materias_cursando: List[str] = []
+
 class EstudianteUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
@@ -48,6 +54,13 @@ class DocenteBase(BaseModel):
 
 class DocenteCreate(DocenteBase):
     password: str
+    materias: List[str] = []
+
+class DocenteCreateBySubdecano(BaseModel):
+    email: EmailStr
+    nombre: str
+    carrera: str
+    materias: List[str] = []
     materias_asignadas: List[str] = []
     grupos_asignados: List[str] = []
 
@@ -90,6 +103,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: UserRole
     user_id: str
+    primer_login: bool = False
 
 # =============== MODELOS DE SOLICITUD ===============
 
@@ -196,3 +210,12 @@ class MensajeResponse(BaseModel):
 
 class MensajeUpdate(BaseModel):
     leido: bool
+
+# =============== MODELOS DE CAMBIO DE CONTRASEÑA ===============
+
+class CambioPasswordRequest(BaseModel):
+    password_actual: str
+    password_nueva: str
+
+class CambioPasswordForzado(BaseModel):
+    password_nueva: str

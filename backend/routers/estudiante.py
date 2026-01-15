@@ -23,7 +23,7 @@ async def get_perfil(current_user: Dict = Depends(get_current_user)):
     if current_user["role"] != "estudiante":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    estudiante = await estudiantes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    estudiante = await estudiantes_collection.find_one({"_id": current_user["user_id"]})
     if not estudiante:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
     
@@ -51,11 +51,11 @@ async def actualizar_perfil(
     
     if update_data:
         await estudiantes_collection.update_one(
-            {"_id": ObjectId(current_user["user_id"])},
+            {"_id": current_user["user_id"]},
             {"$set": update_data}
         )
     
-    estudiante = await estudiantes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    estudiante = await estudiantes_collection.find_one({"_id": current_user["user_id"]})
     
     return EstudianteResponse(
         id=str(estudiante["_id"]),
@@ -78,24 +78,24 @@ async def crear_solicitud(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
     # Verificar que la materia existe
-    materia = await materias_collection.find_one({"_id": ObjectId(solicitud.materia_id)})
+    materia = await materias_collection.find_one({"_id": solicitud.materia_id})
     if not materia:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Materia no encontrada")
     
     # Verificar que el docente existe
-    docente = await docentes_collection.find_one({"_id": ObjectId(solicitud.docente_id)})
+    docente = await docentes_collection.find_one({"_id": solicitud.docente_id})
     if not docente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
     # Obtener datos del estudiante para anonimización
-    estudiante = await estudiantes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    estudiante = await estudiantes_collection.find_one({"_id": current_user["user_id"]})
     
     nueva_solicitud = {
-        "estudiante_id": ObjectId(current_user["user_id"]),
-        "estudiante_nombre_anonimo": anonymize_name(f"{estudiante['nombre']} {estudiante['apellido']}", str(estudiante["_id"])),
-        "materia_id": ObjectId(solicitud.materia_id),
-        "docente_id": ObjectId(solicitud.docente_id),
-        "docente_nombre_anonimo": anonymize_name(f"{docente['nombre']} {docente['apellido']}", str(docente["_id"])),
+        "estudiante_id": current_user["user_id"],
+        "estudiante_nombre_anonimo": anonymize_name(estudiante['nombre'], str(estudiante["_id"])),
+        "materia_id": solicitud.materia_id,
+        "docente_id": solicitud.docente_id,
+        "docente_nombre_anonimo": anonymize_name(docente['nombre'], str(docente["_id"])),
         "grupo": solicitud.grupo,
         "aporte": solicitud.aporte,
         "calificacion_actual": solicitud.calificacion_actual,
@@ -109,7 +109,7 @@ async def crear_solicitud(
     
     # Crear notificación
     await mensajes_collection.insert_one({
-        "destinatario_id": ObjectId(current_user["user_id"]),
+        "destinatario_id": current_user["user_id"],
         "remitente": "Sistema",
         "asunto": "Solicitud creada",
         "contenido": f"Tu solicitud de recalificación para {materia['nombre']} ha sido creada exitosamente y está pendiente de aprobación.",
@@ -142,7 +142,7 @@ async def listar_solicitudes(current_user: Dict = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
     solicitudes = await solicitudes_collection.find(
-        {"estudiante_id": ObjectId(current_user["user_id"])}
+        {"estudiante_id": current_user["user_id"]}
     ).sort("fecha_creacion", -1).to_list(length=100)
     
     resultado = []
@@ -183,7 +183,7 @@ async def obtener_solicitud(
     
     solicitud = await solicitudes_collection.find_one({
         "_id": ObjectId(solicitud_id),
-        "estudiante_id": ObjectId(current_user["user_id"])
+        "estudiante_id": current_user["user_id"]
     })
     
     if not solicitud:
@@ -235,7 +235,7 @@ async def listar_mensajes(current_user: Dict = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
     mensajes = await mensajes_collection.find(
-        {"destinatario_id": ObjectId(current_user["user_id"])}
+        {"destinatario_id": current_user["user_id"]}
     ).sort("fecha_envio", -1).to_list(length=100)
     
     return [
@@ -264,7 +264,7 @@ async def marcar_mensaje_leido(
     result = await mensajes_collection.update_one(
         {
             "_id": ObjectId(mensaje_id),
-            "destinatario_id": ObjectId(current_user["user_id"])
+            "destinatario_id": current_user["user_id"]
         },
         {"$set": {"leido": True}}
     )
@@ -286,7 +286,7 @@ async def obtener_materias(current_user: Dict = Depends(get_current_user)):
     print(f"   Estudiante ID: {current_user['user_id']}")
     
     # Obtener el estudiante
-    estudiante = await estudiantes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    estudiante = await estudiantes_collection.find_one({"_id": current_user["user_id"]})
     if not estudiante:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
     
@@ -297,16 +297,12 @@ async def obtener_materias(current_user: Dict = Depends(get_current_user)):
         print(f"   ⚠️ Estudiante no tiene materias asignadas")
         return []
     
-    # Convertir a ObjectId si son strings
-    try:
-        materias_ids = [ObjectId(mid) if isinstance(mid, str) else mid for mid in materias_cursando]
-    except Exception as e:
-        print(f"   ❌ Error al convertir IDs: {e}")
-        return []
+    # Los IDs en MongoDB son strings como 'CS-301', no ObjectIds
+    print(f"   IDs a buscar: {materias_cursando}")
     
     # Obtener solo las materias que está cursando
     materias = await materias_collection.find(
-        {"_id": {"$in": materias_ids}}
+        {"_id": {"$in": materias_cursando}}
     ).to_list(100)
     
     print(f"   Materias encontradas: {len(materias)}")
@@ -333,9 +329,7 @@ async def obtener_docentes(current_user: Dict = Depends(get_current_user)):
         {
             "id": str(doc["_id"]),
             "nombre": doc["nombre"],
-            "apellido": doc["apellido"],
-            "departamento": doc.get("departamento", ""),
-            "materias_asignadas": [str(mat_id) for mat_id in doc.get("materias_asignadas", [])]
+            "materias": [str(mat_id) for mat_id in doc.get("materias", [])]
         }
         for doc in docentes
     ]

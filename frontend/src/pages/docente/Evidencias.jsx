@@ -13,7 +13,12 @@ const Evidencias = () => {
   const [uploading, setUploading] = useState(false);
   const [step, setStep] = useState(1); // 1: Form, 2: Pixelar, 3: Guardando
   const [tempData, setTempData] = useState(null);
-  const [pixelateArea, setPixelateArea] = useState(null);
+  const [cropArea, setCropArea] = useState(null);
+  const [evidenciaSeleccionada, setEvidenciaSeleccionada] = useState(null);
+  const [showDetalleModal, setShowDetalleModal] = useState(false);
+  
+  // useRef para mantener la referencia actualizada del área
+  const cropAreaRef = React.useRef(null);
   
   const [formData, setFormData] = useState({
     estudiante_id: '',
@@ -103,18 +108,27 @@ const Evidencias = () => {
 
   const handleAreaSelected = (area) => {
     console.log('📍 handleAreaSelected llamado con:', area);
-    console.trace('📍 Stack trace:'); // Ver quién llama a esta función
-    setPixelateArea(area);
+    console.log('📍 Tipo de area:', typeof area, area);
+    // Guardar en ref inmediatamente
+    cropAreaRef.current = area;
+    console.log('📍 cropAreaRef.current después de guardar:', cropAreaRef.current);
+    // También actualizar estado para UI
+    setCropArea(area);
+    console.log('📍 Estado cropArea actualizado a:', area);
   };
 
   const handleFinalizar = async () => {
+    // Usar el ref que siempre tiene el valor más reciente
+    const areaToCrop = cropAreaRef.current;
+    
+    console.log('🔍 Pre-validación:');
+    console.log('   - cropArea (estado):', cropArea);
+    console.log('   - cropAreaRef.current:', areaToCrop);
+    
     setUploading(true);
     setStep(3);
 
     try {
-      // Capturar el área actual antes de cualquier cambio de estado
-      const areaToPixelate = pixelateArea;
-      
       const payload = {
         temp_filename: tempData.temp_filename,
         estudiante_id: formData.estudiante_id,
@@ -122,13 +136,13 @@ const Evidencias = () => {
         grupo: formData.grupo,
         aporte: formData.aporte,
         descripcion: formData.descripcion,
-        pixelate_area: areaToPixelate
+        crop_area: areaToCrop
       };
 
       console.log('📦 Payload enviado al backend:', payload);
-      console.log('🎯 Área de pixelado (capturada):', areaToPixelate);
+      console.log('🎯 Área de recorte (capturada):', areaToCrop);
 
-      const response = await api.post('/docente/evidencias/pixelar', payload);
+      const response = await api.post('/docente/evidencias/recortar', payload);
 
       alert(`✅ Evidencia guardada exitosamente!\n🔑 Código: ${response.data.codigo_interno}\n📁 Hash: ${response.data.archivo_hash}`);
       
@@ -144,7 +158,8 @@ const Evidencias = () => {
         archivo: null
       });
       setTempData(null);
-      setPixelateArea(null);
+      setCropArea(null);
+      cropAreaRef.current = null;
       cargarDatos();
     } catch (error) {
       console.error('Error al guardar evidencia:', error);
@@ -167,7 +182,18 @@ const Evidencias = () => {
       archivo: null
     });
     setTempData(null);
-    setPixelateArea(null);
+    setCropArea(null);
+    cropAreaRef.current = null;
+  };
+
+  const handleVerDetalle = (evidencia) => {
+    setEvidenciaSeleccionada(evidencia);
+    setShowDetalleModal(true);
+  };
+
+  const handleCerrarDetalle = () => {
+    setShowDetalleModal(false);
+    setEvidenciaSeleccionada(null);
   };
 
   if (loading) {
@@ -210,7 +236,12 @@ const Evidencias = () => {
         ) : (
           <div className="evidencias-grid">
             {evidencias.map((ev) => (
-              <div key={ev.id} className="evidencia-card">
+              <div 
+                key={ev.id} 
+                className="evidencia-card"
+                onClick={() => handleVerDetalle(ev)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="evidencia-image">
                   <img 
                     src={`http://localhost:8000${ev.archivo_url}`}
@@ -221,7 +252,7 @@ const Evidencias = () => {
                   />
                   <div className="evidencia-overlay">
                     <span className="hash-badge">🔒 {ev.archivo_nombre_hash}</span>
-                    {ev.pixelado && <span className="pixelado-badge">✓ Pixelado</span>}
+                    {ev.recortada && <span className="recortada-badge">✓ Recortada</span>}
                   </div>
                 </div>
                 <div className="evidencia-info">
@@ -235,6 +266,12 @@ const Evidencias = () => {
                   <p className="text-xs text-gray">
                     {new Date(ev.fecha_subida).toLocaleString('es-ES')}
                   </p>
+                  <button 
+                    className="btn btn-secondary btn-sm"
+                    style={{ marginTop: '10px', width: '100%' }}
+                  >
+                    👁️ Ver Detalle
+                  </button>
                 </div>
               </div>
             ))}
@@ -250,7 +287,7 @@ const Evidencias = () => {
                   <h2>Subir Nueva Evidencia</h2>
                   <p className="text-sm text-gray">
                     {step === 1 && 'Paso 1: Información de la evidencia'}
-                    {step === 2 && 'Paso 2: Pixelar área con nombre del estudiante'}
+                    {step === 2 && 'Paso 2: Marca el área que quieres eliminar (nombre del estudiante)'}
                     {step === 3 && 'Procesando...'}
                   </p>
                 </div>
@@ -276,7 +313,7 @@ const Evidencias = () => {
                       <option value="">Selecciona el estudiante</option>
                       {estudiantes.map((est) => (
                         <option key={est.id} value={est.id}>
-                          {est.nombre} {est.apellido} - {est.cedula}
+                          {est.nombre} - {est.carrera}
                         </option>
                       ))}
                     </select>
@@ -350,7 +387,7 @@ const Evidencias = () => {
                       required
                     />
                     <p className="text-xs text-gray mt-1">
-                      📸 En el siguiente paso podrás pixelar el nombre del estudiante
+                      📸 En el siguiente paso podrás marcar el área con el nombre para eliminarlo
                     </p>
                   </div>
 
@@ -375,14 +412,39 @@ const Evidencias = () => {
               )}
 
               {step === 2 && tempData && (
-                <div className="pixelate-step">
+                <div className="crop-step">
                   <ImagePixelator 
                     imageUrl={`http://localhost:8000${tempData.preview_url}`}
                     onAreaSelected={handleAreaSelected}
                   />
 
-                  <div className="modal-actions" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '8px' }}>
-                    <h3 style={{ marginBottom: '15px', color: '#0369a1' }}>✂️ ¿Marcaste el área que quieres eliminar?</h3>
+                  <div className="modal-actions" style={{ 
+                    marginTop: '30px', 
+                    padding: '20px', 
+                    backgroundColor: cropArea ? '#f0f9ff' : '#fff7ed', 
+                    borderRadius: '8px',
+                    border: cropArea ? '2px solid #0ea5e9' : '2px solid #fb923c'
+                  }}>
+                    {cropArea ? (
+                      <>
+                        <h3 style={{ marginBottom: '15px', color: '#0369a1' }}>
+                          ✅ Área marcada - Se eliminará esto y todo lo de arriba
+                        </h3>
+                        <p style={{ marginBottom: '15px', color: '#0c4a6e', fontSize: '14px' }}>
+                          📏 Área a eliminar: {Math.round(cropArea.width)} x {Math.round(cropArea.height)} píxeles
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 style={{ marginBottom: '15px', color: '#c2410c' }}>
+                          📸 Guardar imagen completa
+                        </h3>
+                        <p style={{ marginBottom: '15px', color: '#7c2d12', fontSize: '14px' }}>
+                          La imagen se guardará sin recortes. Dibuja un rectángulo para seleccionar solo una parte.
+                        </p>
+                      </>
+                    )}
+                    
                     <button
                       type="button"
                       className="btn btn-primary"
@@ -395,6 +457,7 @@ const Evidencias = () => {
                         width: '100%',
                         marginBottom: '10px'
                       }}
+                      title={cropArea ? 'Guardar evidencia con recorte' : 'Guardar evidencia sin recorte'}
                     >
                       {uploading ? 'Procesando...' : '✅ FINALIZAR Y GUARDAR EVIDENCIA'}
                     </button>
@@ -410,10 +473,10 @@ const Evidencias = () => {
                   </div>
                   
                   <p className="text-xs text-center text-gray mt-2">
-                    💡 Dibuja un rectángulo sobre el nombre y luego haz clic en "Finalizar"
+                    💡 Dibuja un rectángulo sobre el NOMBRE del estudiante para eliminarlo
                   </p>
                   <p className="text-xs text-center text-gray">
-                    ⚠️ No hagas clic en "Limpiar selección" antes de finalizar
+                    ℹ️ Se eliminará el área marcada y todo lo que esté arriba
                   </p>
                 </div>
               )}
@@ -426,6 +489,112 @@ const Evidencias = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal para ver detalle de evidencia */}
+        {showDetalleModal && evidenciaSeleccionada && (
+          <div className="modal-overlay" onClick={handleCerrarDetalle}>
+            <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>📸 Detalle de Evidencia</h2>
+                <button className="modal-close" onClick={handleCerrarDetalle}>✕</button>
+              </div>
+
+              <div style={{ padding: '20px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ marginBottom: '15px', color: '#0369a1' }}>{evidenciaSeleccionada.materia_nombre}</h3>
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '15px',
+                    backgroundColor: '#f8fafc',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    marginBottom: '20px'
+                  }}>
+                    {evidenciaSeleccionada.codigo_interno && (
+                      <div>
+                        <strong>🔑 Código Interno:</strong>
+                        <p style={{ fontSize: '18px', color: '#0369a1', fontFamily: 'monospace', marginTop: '5px' }}>
+                          {evidenciaSeleccionada.codigo_interno}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <strong>🔒 Hash:</strong>
+                      <p style={{ fontSize: '14px', color: '#64748b', fontFamily: 'monospace', marginTop: '5px', wordBreak: 'break-all' }}>
+                        {evidenciaSeleccionada.archivo_nombre_hash}
+                      </p>
+                    </div>
+                    <div>
+                      <strong>Grupo:</strong>
+                      <p style={{ marginTop: '5px' }}>{evidenciaSeleccionada.grupo}</p>
+                    </div>
+                    <div>
+                      <strong>Aporte:</strong>
+                      <p style={{ marginTop: '5px' }}>{evidenciaSeleccionada.aporte}</p>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <strong>Descripción:</strong>
+                    <p style={{ 
+                      marginTop: '8px', 
+                      padding: '12px',
+                      backgroundColor: '#f1f5f9',
+                      borderRadius: '6px',
+                      color: '#475569'
+                    }}>
+                      {evidenciaSeleccionada.descripcion}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '15px' }}>
+                    <strong>Fecha de subida:</strong>
+                    <p style={{ marginTop: '5px', color: '#64748b' }}>
+                      {new Date(evidenciaSeleccionada.fecha_subida).toLocaleString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Imagen en grande */}
+                <div style={{ 
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  backgroundColor: '#f8fafc'
+                }}>
+                  <img 
+                    src={`http://localhost:8000${evidenciaSeleccionada.archivo_url}`}
+                    alt={evidenciaSeleccionada.descripcion}
+                    style={{ 
+                      width: '100%', 
+                      height: 'auto',
+                      display: 'block',
+                      maxHeight: '70vh',
+                      objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="20"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions" style={{ padding: '20px', paddingTop: '10px' }}>
+                <button className="btn btn-primary" onClick={handleCerrarDetalle} style={{ width: '100%' }}>
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         )}

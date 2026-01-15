@@ -286,12 +286,17 @@
   }
 }
 
-/* Estilos para el nuevo sistema de pixelado */
+/* Estilos para el nuevo sistema de recorte */
 .modal-large {
   max-width: 90vw !important;
   width: 1000px !important;
 }
 
+.crop-step {
+  padding: 1rem 0;
+}
+
+/* Mantener para compatibilidad */
 .pixelate-step {
   padding: 1rem 0;
 }
@@ -301,6 +306,16 @@
   text-align: center;
 }
 
+.recortada-badge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+/* Mantener para compatibilidad */
 .pixelado-badge {
   background: #10b981;
   color: white;
@@ -327,4 +342,30 @@
 
 .text-center {
   text-align: center;
+}
+
+/* Estilos para botón de ver detalle */
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Hover effect para las tarjetas con cursor pointer */
+.evidencia-card[style*="cursor: pointer"]:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Ajuste para modal grande en detalle de evidencia */
+.modal-large.modal-content {
+  max-width: 90vw;
+  width: 900px;
+}
+
+/* Responsivo para imágenes en modal */
+@media (max-width: 768px) {
+  .modal-large.modal-content {
+    width: 95vw;
+    max-width: none;
+  }
 }

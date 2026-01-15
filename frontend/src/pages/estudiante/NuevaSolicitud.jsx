@@ -52,7 +52,7 @@ const NuevaSolicitud = () => {
       if (materiaSeleccionada) {
         // Filtrar docentes que tengan esta materia asignada
         const docentesDeLaMateria = todosDocentes.filter(doc => 
-          doc.materias_asignadas && doc.materias_asignadas.includes(value)
+          doc.materias && doc.materias.includes(value)
         );
         setDocentesFiltrados(docentesDeLaMateria);
         // Limpiar selección de docente si ya había una
@@ -124,7 +124,7 @@ const NuevaSolicitud = () => {
               </option>
               {docentesFiltrados.map((doc) => (
                 <option key={doc.id} value={doc.id}>
-                  {doc.nombre} {doc.apellido}
+                  {doc.nombre}
                 </option>
               ))}
             </select>
