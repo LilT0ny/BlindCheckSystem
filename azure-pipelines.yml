@@ -1,0 +1,122 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Frontend
+  nodeVersion: '18.x'
+  webBuildDirectory: 'frontend/dist'
+  # Backend
+  pythonVersion: '3.10'
+  # App Service Deployment
+  azureServiceConnectionId: 'MY_AZURE_CONNECTION' # Update with your connection name
+  webAppName: 'MY_BLINDCHECK_APP_NAME' # Update with your App Service name
+
+stages:
+- stage: Build
+  displayName: 'Build and Package'
+  jobs:
+  - job: BuildAndPackage
+    displayName: 'Build Full App'
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+    steps:
+    # 1. Frontend Build
+    - task: NodeTool@0
+      displayName: '⚙️ Instalar Node.js'
+      inputs:
+        versionSpec: $(nodeVersion)
+    
+    - script: |
+        cd frontend
+        npm ci
+        npm run build
+      displayName: '🔨 Build Frontend'
+
+    # 2. Backend Test & Setup
+    - task: UsePythonVersion@0
+      displayName: '⚙️ Instalar Python'
+      inputs:
+        versionSpec: $(pythonVersion)
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+      displayName: '📦 Instalar Deps de Backend'
+
+    - script: |
+        cd backend
+        # Crear .env dummy para CI
+        echo 'PROJECT_NAME="BlindCheck CI"' > .env
+        echo 'MONGODB_URL="mongodb://localhost:27017"' >> .env
+        echo 'DATABASE_NAME="blindcheck_test"' >> .env
+        echo 'SECRET_KEY="testing_key"' >> .env
+        echo 'ALGORITHM="HS256"' >> .env
+        echo 'ACCESS_TOKEN_EXPIRE_MINUTES=30' >> .env
+        python -c "from cryptography.fernet import Fernet; print(f'DATA_ENCRYPTION_KEY=\"{Fernet.generate_key().decode()}\"')" >> .env
+        
+        python seed.py
+        nohup uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+        sleep 5
+        python test_flow.py
+      displayName: '🧪 Test Integration (Backend)'
+
+    # 3. Combine and Package
+    - script: |
+        # Create deployment package structure
+        mkdir deployment
+        cp -r backend/* deployment/
+        
+        # Move Frontend Build to Backend Static folder
+        mkdir -p deployment/app/static
+        cp -r frontend/dist/* deployment/app/static/
+        
+        # Remove artifacts/temps not needed in prod
+        rm deployment/.env
+        rm -rf deployment/__pycache__
+        rm deployment/test_flow.py
+        rm deployment/seed.py
+      displayName: '📦 Package Application'
+
+    - task: ArchiveFiles@2
+      displayName: '📚 Validar Zip para App Service'
+      inputs:
+        rootFolderOrFile: 'deployment'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(webAppName).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: '⬆️ Publicar Zip'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure App Service'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy to Web App'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: '🚀 Deploy Azure Web App'
+            inputs:
+              azureSubscription: $(azureServiceConnectionId)
+              appType: 'webAppLinux' # Assuming Linux App Service for Python
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/$(webAppName).zip'
+              startUpCommand: 'uvicorn app.main:app --host 0.0.0.0 --port 8000'
+
+
