@@ -13,7 +13,11 @@ app = FastAPI(
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://visual-blindcheck-hudsc3d2d4degwau.eastus-01.azurewebsites.net"
+    ],  # React dev servers & Production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -40,7 +40,7 @@ const Recalificaciones = () => {
       const response = await api.get(`/docente/recalificaciones/${solicitud.id}/evidencia`);
       if (response.data && response.data.archivo_url) {
         // archivo_url ya viene con / al inicio, no agregar otro /
-        const url = `http://localhost:8000${response.data.archivo_url}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL.replace('/api', '')}${response.data.archivo_url}`;
         window.open(url, '_blank');
       } else {
         alert('⚠️ No se encontró evidencia para esta solicitud');
@@ -53,7 +53,7 @@ const Recalificaciones = () => {
 
   const handleSubmitCalificacion = async (e) => {
     e.preventDefault();
-    
+
     const nota = parseFloat(formCalificacion.nota);
     if (isNaN(nota) || nota < 0 || nota > 10) {
       alert('❌ Calificación debe estar entre 0 y 10');
@@ -210,7 +210,7 @@ const Recalificaciones = () => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Calificar Solicitud</h2>
-                <button 
+                <button
                   className="modal-close"
                   onClick={() => setShowModal(false)}
                 >
@@ -237,7 +237,7 @@ const Recalificaciones = () => {
                       min="0"
                       max="10"
                       value={formCalificacion.nota}
-                      onChange={(e) => setFormCalificacion({...formCalificacion, nota: e.target.value})}
+                      onChange={(e) => setFormCalificacion({ ...formCalificacion, nota: e.target.value })}
                       placeholder="Ej: 8.5"
                       required
                       autoFocus
@@ -250,7 +250,7 @@ const Recalificaciones = () => {
                       id="comentario"
                       rows="4"
                       value={formCalificacion.comentario}
-                      onChange={(e) => setFormCalificacion({...formCalificacion, comentario: e.target.value})}
+                      onChange={(e) => setFormCalificacion({ ...formCalificacion, comentario: e.target.value })}
                       placeholder="Agrega un comentario sobre la recalificación..."
                     />
                   </div>
