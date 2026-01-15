@@ -1,5 +1,5 @@
 trigger:
-  - frontend # El pipeline se activará cuando hagas commit a esta rama
+  - main # El pipeline se activará cuando hagas commit a esta rama
 
 variables:
   # Nombres de las conexiones que acabas de crear
@@ -14,7 +14,7 @@ variables:
   # Nombres de los App Services (deben coincidir con el Portal de Azure)
   webAppNameBack: 'API-BlindCheck'
   # Nota: Asegúrate de crear el App Service para el front si aún no lo tienes
-  webAppNameFront: 'FRONT-BlindCheck' 
+  webAppNameFront: 'visual-blindcheck' 
 
 stages:
 - stage: BuildAndPush
