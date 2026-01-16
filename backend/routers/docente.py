@@ -5,7 +5,7 @@ from datetime import datetime
 import hashlib
 import os
 from pathlib import Path
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ExifTags
 import io
 import base64
 from models.schemas import (
@@ -30,6 +30,43 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR = Path("uploads/temp")
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
+# Función para corregir orientación EXIF
+def correct_image_orientation(img):
+    """Corrige la orientación de la imagen según metadatos EXIF"""
+    try:
+        # Obtener información EXIF
+        exif = img._getexif()
+        if exif is None:
+            return img
+        
+        # Buscar el tag de orientación
+        orientation_key = None
+        for tag, value in ExifTags.TAGS.items():
+            if value == 'Orientation':
+                orientation_key = tag
+                break
+        
+        if orientation_key is None:
+            return img
+            
+        orientation = exif.get(orientation_key)
+        
+        # Aplicar rotación según orientación EXIF
+        if orientation == 3:
+            img = img.rotate(180, expand=True)
+        elif orientation == 6:
+            img = img.rotate(270, expand=True)
+        elif orientation == 8:
+            img = img.rotate(90, expand=True)
+            
+        print(f"   📐 Orientación EXIF corregida: {orientation}")
+        
+    except (AttributeError, KeyError, IndexError, TypeError) as e:
+        # Si no hay EXIF o hay error, devolver imagen original
+        print(f"   ℹ️ No se pudo leer EXIF o no tiene orientación: {e}")
+        pass
+    return img
+
 # =============== PERFIL DEL DOCENTE ===============
 
 @router.get("/perfil", response_model=DocenteResponse)
@@ -38,7 +75,7 @@ async def get_perfil(current_user: Dict = Depends(get_current_user)):
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    docente = await docentes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    docente = await docentes_collection.find_one({"_id": current_user["user_id"]})
     if not docente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
@@ -46,10 +83,7 @@ async def get_perfil(current_user: Dict = Depends(get_current_user)):
         id=str(docente["_id"]),
         email=docente["email"],
         nombre=docente["nombre"],
-        apellido=docente["apellido"],
-        cedula=docente["cedula"],
-        departamento=docente["departamento"],
-        materias_asignadas=docente.get("materias_asignadas", []),
+        materias=docente.get("materias", []),
         grupos_asignados=docente.get("grupos_asignados", []),
         fecha_registro=docente["fecha_registro"]
     )
@@ -65,25 +99,22 @@ async def actualizar_perfil(
     
     # Excluir materias y grupos de la actualización (solo el subdecano puede cambiarlos)
     update_data = {
-        k: v for k, v in datos.dict(exclude_unset=True, exclude={"materias_asignadas", "grupos_asignados"}).items()
+        k: v for k, v in datos.dict(exclude_unset=True, exclude={"materias", "grupos_asignados"}).items()
     }
     
     if update_data:
         await docentes_collection.update_one(
-            {"_id": ObjectId(current_user["user_id"])},
+            {"_id": current_user["user_id"]},
             {"$set": update_data}
         )
     
-    docente = await docentes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    docente = await docentes_collection.find_one({"_id": current_user["user_id"]})
     
     return DocenteResponse(
         id=str(docente["_id"]),
         email=docente["email"],
         nombre=docente["nombre"],
-        apellido=docente["apellido"],
-        cedula=docente["cedula"],
-        departamento=docente["departamento"],
-        materias_asignadas=docente.get("materias_asignadas", []),
+        materias=docente.get("materias", []),
         grupos_asignados=docente.get("grupos_asignados", []),
         fecha_registro=docente["fecha_registro"]
     )
@@ -96,30 +127,25 @@ async def listar_materias_asignadas(current_user: Dict = Depends(get_current_use
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    docente = await docentes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
+    docente = await docentes_collection.find_one({"_id": current_user["user_id"]})
     if not docente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
     print(f"\n📚 DEBUG MATERIAS:")
     print(f"   Docente: {docente.get('nombre')}")
-    print(f"   materias_asignadas en BD: {docente.get('materias_asignadas', [])}")
-    print(f"   Tipo: {type(docente.get('materias_asignadas', []))}")
+    print(f"   materias en BD: {docente.get('materias', [])}")
+    print(f"   Tipo: {type(docente.get('materias', []))}")
     
-    materias_asignadas = docente.get("materias_asignadas", [])
-    if materias_asignadas:
-        print(f"   Primer elemento tipo: {type(materias_asignadas[0])}")
-        print(f"   Primer elemento valor: {materias_asignadas[0]}")
+    materias_ids_str = docente.get("materias", [])
+    if materias_ids_str:
+        print(f"   Primer elemento tipo: {type(materias_ids_str[0])}")
+        print(f"   Primer elemento valor: {materias_ids_str[0]}")
     
-    # Convertir a ObjectId si son strings
-    try:
-        materias_ids = [ObjectId(mid) if isinstance(mid, str) else mid for mid in materias_asignadas]
-        print(f"   IDs convertidos: {materias_ids}")
-    except Exception as e:
-        print(f"   ❌ Error al convertir: {e}")
-        materias_ids = []
+    # Los IDs en MongoDB son strings como 'CS-301', no ObjectIds
+    print(f"   IDs a buscar: {materias_ids_str}")
     
     materias = await materias_collection.find(
-        {"_id": {"$in": materias_ids}}
+        {"_id": {"$in": materias_ids_str}}
     ).to_list(length=100)
     
     print(f"   Materias encontradas: {len(materias)}")
@@ -128,7 +154,7 @@ async def listar_materias_asignadas(current_user: Dict = Depends(get_current_use
     for materia in materias:
         # Contar evidencias subidas para esta materia
         count_evidencias = await evidencias_collection.count_documents({
-            "docente_id": ObjectId(current_user["user_id"]),
+            "docente_id": current_user["user_id"],
             "materia_id": materia["_id"]
         })
         
@@ -148,17 +174,14 @@ async def listar_estudiantes(current_user: Dict = Depends(get_current_user)):
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    estudiantes = await estudiantes_collection.find().sort("apellido", 1).to_list(length=1000)
+    estudiantes = await estudiantes_collection.find().sort("nombre", 1).to_list(length=1000)
     
     resultado = []
     for est in estudiantes:
         resultado.append({
             "id": str(est["_id"]),
             "nombre": est["nombre"],
-            "apellido": est["apellido"],
-            "cedula": est["cedula"],
-            "carrera": est.get("carrera", ""),
-            "nivel": est.get("nivel", 0)
+            "carrera": est.get("carrera", "")
         })
     
     return resultado
@@ -178,8 +201,8 @@ async def subir_evidencia(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
     # Verificar que el docente tenga asignada esta materia
-    docente = await docentes_collection.find_one({"_id": ObjectId(current_user["user_id"])})
-    if str(materia_id) not in docente.get("materias_asignadas", []):
+    docente = await docentes_collection.find_one({"_id": current_user["user_id"]})
+    if str(materia_id) not in docente.get("materias", []):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes asignada esta materia")
     
     # Validar que sea una imagen
@@ -202,12 +225,12 @@ async def subir_evidencia(
         buffer.write(content)
     
     # Guardar metadata en la base de datos
-    materia = await materias_collection.find_one({"_id": ObjectId(materia_id)})
+    materia = await materias_collection.find_one({"_id": materia_id})
     
     nueva_evidencia = {
-        "estudiante_id": ObjectId(estudiante_id),
-        "docente_id": ObjectId(current_user["user_id"]),
-        "materia_id": ObjectId(materia_id),
+        "estudiante_id": estudiante_id,
+        "docente_id": current_user["user_id"],
+        "materia_id": materia_id,
         "grupo": grupo,
         "aporte": aporte,
         "descripcion": descripcion,
@@ -236,7 +259,7 @@ async def subir_evidencia_temporal(
     aporte: str = Form(...),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Sube evidencia temporal para previsualización y pixelado"""
+    """Sube evidencia temporal para previsualización y recorte"""
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -259,15 +282,15 @@ async def subir_evidencia_temporal(
         "temp_id": temp_id,
         "temp_filename": temp_filename,
         "preview_url": f"/uploads/temp/{temp_filename}",
-        "message": "Imagen cargada. Marca el área del nombre para pixelar."
+        "message": "Imagen cargada. Marca el área del nombre para recortar."
     }
 
-@router.post("/evidencias/pixelar")
-async def pixelar_area_y_guardar(
+@router.post("/evidencias/recortar")
+async def recortar_area_y_guardar(
     datos: Dict = Body(...),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Pixela el área seleccionada y guarda la evidencia final"""
+    """Recorta el área seleccionada y guarda la evidencia final"""
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -277,7 +300,7 @@ async def pixelar_area_y_guardar(
     grupo = datos.get("grupo")
     aporte = datos.get("aporte")
     descripcion = datos.get("descripcion", "")
-    pixelate_area = datos.get("pixelate_area")  # {x, y, width, height}
+    crop_area = datos.get("crop_area")  # {x, y, width, height}
     
     # Validar datos
     if not all([temp_filename, estudiante_id, materia_id, grupo, aporte]):
@@ -291,28 +314,54 @@ async def pixelar_area_y_guardar(
         # Abrir imagen
         img = Image.open(temp_path)
         
-        print(f"\n✂️ DEBUG RECORTE:")
-        print(f"   crop_area recibido: {pixelate_area}")
-        print(f"   Tipo: {type(pixelate_area)}")
-        if pixelate_area:
-            print(f"   Width: {pixelate_area.get('width', 0)}")
-            print(f"   Height: {pixelate_area.get('height', 0)}")
+        print(f"\n📷 DEBUG PROCESAMIENTO IMAGEN:")
+        print(f"   Dimensión original: {img.width}x{img.height}")
+        print(f"   Formato: {img.format}")
         
-        # Si hay área para recortar
-        if pixelate_area and pixelate_area.get("width", 0) > 0:
-            y = int(pixelate_area["y"])
-            height = int(pixelate_area["height"])
+        # PASO 1: Corregir orientación EXIF primero
+        img = correct_image_orientation(img)
+        print(f"   Dimensión después de orientación: {img.width}x{img.height}")
+        
+        print(f"\n✂️ DEBUG RECORTE:")
+        print(f"   crop_area recibido: {crop_area}")
+        print(f"   Tipo: {type(crop_area)}")
+        if crop_area:
+            print(f"   x: {crop_area.get('x', 'N/A')}")
+            print(f"   y: {crop_area.get('y', 'N/A')}")
+            print(f"   Width: {crop_area.get('width', 0)}")
+            print(f"   Height: {crop_area.get('height', 0)}")
+        else:
+            print(f"   ⚠️ crop_area es None o vacío")
+        
+        # PASO 2: Si hay área para recortar
+        if crop_area and crop_area.get("width", 0) > 0 and crop_area.get("height", 0) > 0:
+            x = int(crop_area["x"])
+            y = int(crop_area["y"])
+            width = int(crop_area["width"])
+            height = int(crop_area["height"])
             
-            # Calcular el punto de corte (parte inferior del rectángulo dibujado)
-            # Todo lo que esté ARRIBA de (y + height) será eliminado
-            crop_from_y = y + height
-            
-            print(f"   ✅ RECORTANDO desde Y={crop_from_y}")
+            print(f"   ✅ RECORTANDO - Eliminando área seleccionada y todo arriba")
             print(f"   📏 Imagen original: {img.width}x{img.height}")
+            print(f"   📐 Área seleccionada para eliminar: x={x}, y={y}, width={width}, height={height}")
+            
+            # Calcular desde dónde cortar: eliminar todo ARRIBA incluyendo el rectángulo
+            crop_from_y = y + height
+            print(f"   ✂️ Cortando desde Y={crop_from_y} hasta el final")
+            print(f"   📍 Coordenadas de recorte: left=0, top={crop_from_y}, right={img.width}, bottom={img.height}")
+            
+            # Guardar imagen ANTES del recorte para comparar (temporal)
+            temp_before = TEMP_DIR / f"before_{temp_filename}"
+            img.save(temp_before)
+            print(f"   💾 Imagen ANTES guardada en: {temp_before}")
             
             # Recortar imagen: (left, top, right, bottom)
-            # Eliminamos todo desde arriba (0) hasta crop_from_y
+            # Eliminar todo desde arriba (0) hasta el borde inferior del rectángulo
             img = img.crop((0, crop_from_y, img.width, img.height))
+            
+            # Guardar imagen DESPUÉS del recorte para comparar (temporal)
+            temp_after = TEMP_DIR / f"after_{temp_filename}"
+            img.save(temp_after)
+            print(f"   💾 Imagen DESPUÉS guardada en: {temp_after}")
             
             print(f"   ✅ Recorte completado. Nueva dimensión: {img.width}x{img.height}")
         else:
@@ -332,7 +381,7 @@ async def pixelar_area_y_guardar(
         temp_path.unlink()
         
         # Obtener datos del estudiante y materia
-        materia = await materias_collection.find_one({"_id": ObjectId(materia_id)})
+        materia = await materias_collection.find_one({"_id": materia_id})
         
         # Generar código de vinculación único
         codigo_interno = f"{materia.get('codigo', 'MAT')[:4].upper()}-{aporte.upper()[:3]}-{file_hash[:6].upper()}"
@@ -340,15 +389,15 @@ async def pixelar_area_y_guardar(
         # Guardar metadata en BD
         nueva_evidencia = {
             "codigo_interno": codigo_interno,
-            "estudiante_id": ObjectId(estudiante_id),
-            "docente_id": ObjectId(current_user["user_id"]),
-            "materia_id": ObjectId(materia_id),
+            "estudiante_id": estudiante_id,
+            "docente_id": current_user["user_id"],
+            "materia_id": materia_id,
             "grupo": grupo,
             "aporte": aporte,
             "descripcion": descripcion,
             "archivo_nombre_hash": hashed_filename,
             "archivo_url": f"/uploads/evidencias/{hashed_filename}",
-            "recortada": pixelate_area is not None and pixelate_area.get("width", 0) > 0,
+            "recortada": crop_area is not None and crop_area.get("width", 0) > 0,
             "fecha_subida": datetime.utcnow()
         }
         
@@ -375,7 +424,7 @@ async def listar_evidencias(current_user: Dict = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
     evidencias = await evidencias_collection.find(
-        {"docente_id": ObjectId(current_user["user_id"])}
+        {"docente_id": current_user["user_id"]}
     ).sort("fecha_subida", -1).to_list(length=1000)
     
     resultado = []
@@ -390,10 +439,11 @@ async def listar_evidencias(current_user: Dict = Depends(get_current_user)):
             "descripcion": ev["descripcion"],
             "archivo_nombre_hash": ev["archivo_nombre_hash"],
             "archivo_url": ev["archivo_url"],
-            "fecha_subida": ev["fecha_subida"]
+            "fecha_subida": ev["fecha_subida"],
+            "codigo_interno": ev.get("codigo_interno", ""),
+            "recortada": ev.get("recortada", False)
         })
     
-    return resultado
     return resultado
 
 # =============== RECALIFICACIONES ===============
@@ -409,7 +459,7 @@ async def listar_recalificaciones_asignadas(current_user: Dict = Depends(get_cur
     
     # Buscar solicitudes donde este docente esté asignado como RECALIFICADOR
     solicitudes = await solicitudes_collection.find({
-        "docente_recalificador_id": ObjectId(current_user["user_id"]),
+        "docente_recalificador_id": current_user["user_id"],
         "estado": {"$in": ["en_revision", "calificada"]}
     }).sort("fecha_creacion", -1).to_list(length=1000)
     
@@ -451,7 +501,7 @@ async def calificar_solicitud(
     # Verificar que la solicitud existe y está asignada a este docente como RECALIFICADOR
     solicitud = await solicitudes_collection.find_one({
         "_id": ObjectId(solicitud_id),
-        "docente_recalificador_id": ObjectId(current_user["user_id"])
+        "docente_recalificador_id": current_user["user_id"]
     })
     
     if not solicitud:
@@ -507,7 +557,7 @@ async def obtener_evidencia_solicitud(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitud no encontrada")
     
     # Verificar que este docente sea el recalificador asignado
-    if solicitud.get("docente_recalificador_id") != ObjectId(current_user["user_id"]):
+    if solicitud.get("docente_recalificador_id") != current_user["user_id"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tienes permiso para ver esta evidencia"
@@ -559,7 +609,7 @@ async def obtener_evidencia_solicitud(
         "archivo_url": evidencia.get("archivo_url"),
         "archivo_nombre_hash": evidencia.get("archivo_nombre_hash"),
         "descripcion": evidencia.get("descripcion"),
-        "pixelado": evidencia.get("pixelado", False),
+        "recortada": evidencia.get("recortada", False),
         "codigo_interno": evidencia.get("codigo_interno"),
         "fecha_subida": evidencia.get("fecha_subida")
     }

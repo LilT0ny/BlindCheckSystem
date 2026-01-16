@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import CambiarPassword from './CambiarPassword';
 import './Login.css';
 
 const Login = () => {
@@ -16,6 +17,8 @@ const Login = () => {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showCambiarPassword, setShowCambiarPassword] = useState(false);
+  const [loginData, setLoginData] = useState(null);
 
   const handleChange = (e) => {
     setFormData({
@@ -37,8 +40,29 @@ const Login = () => {
 
     try {
       const response = await api.post('/auth/login', formData);
-      const { access_token, role, user_id } = response.data;
+      const { access_token, role, user_id, primer_login } = response.data;
       
+      console.log('🔍 DEBUG LOGIN FRONTEND:');
+      console.log('  Response data:', response.data);
+      console.log('  primer_login:', primer_login);
+      console.log('  tipo de primer_login:', typeof primer_login);
+      
+      // Guardar datos del login
+      setLoginData({ id: user_id, email: formData.email, role, access_token });
+      
+      // Si es primer login, mostrar modal de cambio de contraseña
+      if (primer_login) {
+        console.log('  ✅ Mostrando modal de cambio de contraseña');
+        // Guardar token temporalmente para poder cambiar la contraseña
+        localStorage.setItem('token', access_token);
+        setShowCambiarPassword(true);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('  ℹ️ Login normal, redirigiendo...');
+      
+      // Login normal
       login({ id: user_id, email: formData.email, role }, access_token);
       
       // Redirigir según el rol
@@ -62,13 +86,43 @@ const Login = () => {
     }
   };
 
+  const handlePasswordChanged = () => {
+    // Después de cambiar la contraseña, hacer login automáticamente
+    if (loginData) {
+      login(
+        { id: loginData.id, email: loginData.email, role: loginData.role }, 
+        loginData.access_token
+      );
+      
+      // Redirigir según el rol
+      switch (loginData.role) {
+        case 'estudiante':
+          navigate('/estudiante/dashboard');
+          break;
+        case 'docente':
+          navigate('/docente/dashboard');
+          break;
+        case 'subdecano':
+          navigate('/subdecano/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  };
+
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>Sistema de Recalificación</h1>
-          <p>Ingresa tus credenciales para continuar</p>
-        </div>
+    <>
+      {showCambiarPassword && (
+        <CambiarPassword onPasswordChanged={handlePasswordChanged} />
+      )}
+      
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <h1>Sistema de Recalificación</h1>
+            <p>Ingresa tus credenciales para continuar</p>
+          </div>
 
         {error && (
           <div className="alert alert-error">
@@ -138,6 +192,7 @@ const Login = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import AlertModal from '../../components/AlertModal';
 import api from '../../services/api';
 import './NuevaSolicitud.css';
 
 const NuevaSolicitud = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [materias, setMaterias] = useState([]);
-  const [todosDocentes, setTodosDocentes] = useState([]);
-  const [docentesFiltrados, setDocentesFiltrados] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [opcionesSolicitud, setOpcionesSolicitud] = useState([]);
+  const [opcionesSeleccionada, setOpcionesSeleccionada] = useState(null);
+  const [alert, setAlert] = useState({ show: false, type: 'info', title: '', message: '' });
   
   const [formData, setFormData] = useState({
     materia_id: '',
@@ -21,44 +22,50 @@ const NuevaSolicitud = () => {
   });
 
   useEffect(() => {
-    cargarDatos();
+    cargarOpciones();
   }, []);
 
-  const cargarDatos = async () => {
+  const cargarOpciones = async () => {
     try {
-      // Cargar materias y docentes desde estudiante endpoints
-      const [materiasRes, docentesRes] = await Promise.all([
-        api.get('/estudiante/materias'),
-        api.get('/estudiante/docentes')
-      ]);
-      setMaterias(materiasRes.data);
-      setTodosDocentes(docentesRes.data);
+      // Cargar SOLO las opciones que tienen evidencias disponibles
+      const res = await api.get('/estudiante/opciones-solicitud');
+      setOpcionesSolicitud(res.data);
+      setLoading(false);
+      
+      if (res.data.length === 0) {
+        console.log('⚠️ No hay evidencias disponibles para solicitar recalificaciones');
+      } else {
+        console.log(`✅ ${res.data.length} opciones de solicitud disponibles`);
+      }
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      console.error('Error al cargar opciones:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleOpcionChange = (e) => {
+    const index = parseInt(e.target.value);
+    const opcion = opcionesSolicitud[index];
+    
+    if (opcion) {
+      setOpcionesSeleccionada(opcion);
+      setFormData({
+        materia_id: opcion.materia_id,
+        docente_id: opcion.docente_id,
+        grupo: opcion.grupo,
+        aporte: opcion.aporte,
+        calificacion_actual: '',
+        motivo: ''
+      });
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
     setFormData({
       ...formData,
       [name]: value
     });
-
-    // Si cambia la materia, filtrar docentes
-    if (name === 'materia_id' && value) {
-      const materiaSeleccionada = materias.find(m => m.id === value);
-      if (materiaSeleccionada) {
-        // Filtrar docentes que tengan esta materia asignada
-        const docentesDeLaMateria = todosDocentes.filter(doc => 
-          doc.materias_asignadas && doc.materias_asignadas.includes(value)
-        );
-        setDocentesFiltrados(docentesDeLaMateria);
-        // Limpiar selección de docente si ya había una
-        setFormData(prev => ({ ...prev, docente_id: '' }));
-      }
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -67,102 +74,130 @@ const NuevaSolicitud = () => {
 
     try {
       await api.post('/estudiante/solicitudes', formData);
-      alert('✅ Solicitud creada exitosamente');
-      navigate('/estudiante/solicitudes');
+      setAlert({
+        show: true,
+        type: 'success',
+        title: '✅ Éxito',
+        message: 'Solicitud creada exitosamente'
+      });
+      setTimeout(() => navigate('/estudiante/solicitudes'), 1500);
     } catch (error) {
       console.error('Error:', error);
-      alert('❌ Error al crear solicitud: ' + (error.response?.data?.detail || 'Error desconocido'));
+      setAlert({
+        show: true,
+        type: 'error',
+        title: '❌ Error',
+        message: error.response?.data?.detail || 'Error desconocido al crear solicitud'
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  if (loading && opcionesSolicitud.length === 0) {
+    return (
+      <Layout title="Nueva Solicitud">
+        <div className="text-center mt-4">
+          <span className="loading"></span>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (opcionesSolicitud.length === 0) {
+    return (
+      <Layout title="Nueva Solicitud de Recalificación">
+        <div className="card max-w-2xl mx-auto">
+          <div className="card-header">
+            <h2 className="card-title">📝 Nueva Solicitud</h2>
+          </div>
+          <div className="alert alert-info">
+            <p>📚 No hay evidencias disponibles en el sistema para solicitar recalificaciones.</p>
+            <p>Por favor, espera a que los docentes suban las evidencias de los aportes.</p>
+          </div>
+          <div className="form-actions" style={{ justifyContent: 'flex-start' }}>
+            <button
+              onClick={() => navigate('/estudiante/dashboard')}
+              className="btn btn-primary"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout title="Nueva Solicitud de Recalificación">
+      <AlertModal 
+        show={alert.show}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, show: false })}
+      />
       <div className="card max-w-2xl mx-auto">
         <div className="card-header">
           <h2 className="card-title">📝 Nueva Solicitud</h2>
         </div>
         <form onSubmit={handleSubmit} className="form">
+          {/* Selector de opción precargada */}
           <div className="form-group">
-            <label htmlFor="materia_id" className="form-label">Materia *</label>
+            <label htmlFor="opcion" className="form-label">
+              Elige una opción disponible *
+              <span className="badge badge-info" style={{ marginLeft: '10px' }}>
+                {opcionesSolicitud.length} opción{opcionesSolicitud.length !== 1 ? 'es' : ''} disponible{opcionesSolicitud.length !== 1 ? 's' : ''}
+              </span>
+            </label>
             <select
-              id="materia_id"
-              name="materia_id"
-              value={formData.materia_id}
-              onChange={handleChange}
+              id="opcion"
+              onChange={handleOpcionChange}
               className="form-select"
               required
             >
-              <option value="">Selecciona una materia</option>
-              {materias.map((mat) => (
-                <option key={mat.id} value={mat.id}>
-                  {mat.nombre} ({mat.codigo})
+              <option value="">Selecciona una opción</option>
+              {opcionesSolicitud.map((opcion, index) => (
+                <option key={index} value={index}>
+                  {opcion.materia_nombre} ({opcion.materia_id}) - {opcion.docente_nombre} - Grupo {opcion.grupo} - {opcion.aporte}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="docente_id" className="form-label">Docente *</label>
-            <select
-              id="docente_id"
-              name="docente_id"
-              value={formData.docente_id}
-              onChange={handleChange}
-              className="form-select"
-              required
-              disabled={!formData.materia_id}
-            >
-              <option value="">
-                {!formData.materia_id 
-                  ? 'Primero selecciona una materia' 
-                  : docentesFiltrados.length === 0 
-                    ? 'No hay docentes para esta materia'
-                    : 'Selecciona un docente'
-                }
-              </option>
-              {docentesFiltrados.map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  {doc.nombre} {doc.apellido}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Detalles de la opción seleccionada (solo lectura) */}
+          {opcionesSeleccionada && (
+            <div className="option-details">
+              <div className="detail-row">
+                <div className="detail-group">
+                  <label className="detail-label">Materia</label>
+                  <p className="detail-value">{opcionesSeleccionada.materia_nombre}</p>
+                </div>
+                <div className="detail-group">
+                  <label className="detail-label">Código</label>
+                  <p className="detail-value">{opcionesSeleccionada.materia_id}</p>
+                </div>
+              </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="grupo" className="form-label">Grupo *</label>
-              <input
-                type="text"
-                id="grupo"
-                name="grupo"
-                value={formData.grupo}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Ej: GR1"
-                required
-              />
-            </div>
+              <div className="detail-row">
+                <div className="detail-group">
+                  <label className="detail-label">Docente</label>
+                  <p className="detail-value">{opcionesSeleccionada.docente_nombre}</p>
+                </div>
+                <div className="detail-group">
+                  <label className="detail-label">Grupo</label>
+                  <p className="detail-value">{opcionesSeleccionada.grupo}</p>
+                </div>
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="aporte" className="form-label">Aporte *</label>
-              <select
-                id="aporte"
-                name="aporte"
-                value={formData.aporte}
-                onChange={handleChange}
-                className="form-select"
-                required
-              >
-                <option value="">Selecciona</option>
-                <option value="Prueba 1">Prueba 1</option>
-                <option value="Examen 1">Examen 1</option>
-                <option value="Prueba 2">Prueba 2</option>
-                <option value="Examen 2">Examen 2</option>
-              </select>
+              <div className="detail-row">
+                <div className="detail-group">
+                  <label className="detail-label">Aporte</label>
+                  <p className="detail-value">{opcionesSeleccionada.aporte}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="calificacion_actual" className="form-label">
@@ -178,6 +213,7 @@ const NuevaSolicitud = () => {
               min="0"
               max="10"
               step="0.1"
+              placeholder="Ingresa tu calificación actual"
               required
             />
           </div>
@@ -207,7 +243,7 @@ const NuevaSolicitud = () => {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading}
+              disabled={loading || !opcionesSeleccionada}
             >
               {loading ? 'Enviando...' : 'Enviar Solicitud'}
             </button>

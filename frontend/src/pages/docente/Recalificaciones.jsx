@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
+import AlertModal from '../../components/AlertModal';
 import api from '../../services/api';
 import './Recalificaciones.css';
 
@@ -9,6 +10,7 @@ const Recalificaciones = () => {
   const [filtro, setFiltro] = useState('aprobada');
   const [showModal, setShowModal] = useState(false);
   const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
+  const [alert, setAlert] = useState({ show: false, type: 'info', title: '', message: '' });
   const [formCalificacion, setFormCalificacion] = useState({
     nota: '',
     comentario: ''
@@ -43,11 +45,11 @@ const Recalificaciones = () => {
         const url = `${import.meta.env.VITE_BACKEND_URL.replace('/api', '')}${response.data.archivo_url}`;
         window.open(url, '_blank');
       } else {
-        alert('⚠️ No se encontró evidencia para esta solicitud');
+        setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'No se encontró evidencia para esta solicitud' });
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('❌ Error al obtener evidencia: ' + (error.response?.data?.detail || 'Error desconocido'));
+      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al obtener evidencia: ' + (error.response?.data?.detail || 'Error desconocido') });
     }
   };
 
@@ -56,7 +58,7 @@ const Recalificaciones = () => {
 
     const nota = parseFloat(formCalificacion.nota);
     if (isNaN(nota) || nota < 0 || nota > 10) {
-      alert('❌ Calificación debe estar entre 0 y 10');
+      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Calificación debe estar entre 0 y 10' });
       return;
     }
 
@@ -65,12 +67,12 @@ const Recalificaciones = () => {
         nota: nota,
         comentario: formCalificacion.comentario
       });
-      alert('✅ Calificación registrada exitosamente');
+      setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Calificación registrada exitosamente' });
       setShowModal(false);
       cargarRecalificaciones();
     } catch (error) {
       console.error('Error:', error);
-      alert('❌ Error al calificar: ' + (error.response?.data?.detail || 'Error desconocido'));
+      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al calificar: ' + (error.response?.data?.detail || 'Error desconocido') });
     }
   };
 
@@ -102,6 +104,13 @@ const Recalificaciones = () => {
 
   return (
     <Layout title="Recalificaciones">
+      <AlertModal 
+        show={alert.show}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, show: false })}
+      />
       <div className="recalificaciones-container">
         <div className="recalificaciones-header">
           <h2>📝 Recalificaciones Asignadas</h2>

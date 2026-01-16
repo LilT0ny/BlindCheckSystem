@@ -6,7 +6,8 @@ from models.schemas import (
     DocenteCreate, DocenteUpdate, DocenteResponse,
     EstudianteCreate, EstudianteResponse,
     SolicitudResponse, SolicitudUpdateEstado, EstadoSolicitud,
-    MateriaCreate, MateriaResponse
+    MateriaCreate, MateriaResponse,
+    DocenteCreateBySubdecano, EstudianteCreateBySubdecano
 )
 from database import (
     docentes_collection, estudiantes_collection, subdecanos_collection,
@@ -19,12 +20,12 @@ router = APIRouter(prefix="/api/subdecano", tags=["Subdecano"])
 
 # =============== GESTIÓN DE DOCENTES ===============
 
-@router.post("/docentes", response_model=DocenteResponse)
+@router.post("/docentes")
 async def crear_docente(
-    docente: DocenteCreate,
+    docente: DocenteCreateBySubdecano,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Crea un nuevo docente"""
+    """Crea un nuevo docente con contraseña por defecto"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -33,27 +34,41 @@ async def crear_docente(
     if existe:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email ya está registrado")
     
+    # Generar ID único para el docente
+    import secrets
+    docente_id = f"DOC{secrets.randbelow(10000):04d}"
+    while await docentes_collection.find_one({"_id": docente_id}):
+        docente_id = f"DOC{secrets.randbelow(10000):04d}"
+    
+    # Contraseña por defecto: docente123
+    password_default = "docente123"
+    
     nuevo_docente = {
-        **docente.dict(exclude={"password"}),
-        "password": hash_password(docente.password),
+        "_id": docente_id,
+        "email": docente.email,
+        "nombre": docente.nombre,
+        "password": hash_password(password_default),
+        "rol": "docente",
+        "carrera": docente.carrera,
+        "materias": docente.materias,
+        "activo": True,
+        "primer_login": True,  # Debe cambiar contraseña en primer login
         "fecha_registro": datetime.utcnow()
     }
     
-    result = await docentes_collection.insert_one(nuevo_docente)
+    await docentes_collection.insert_one(nuevo_docente)
     
-    return DocenteResponse(
-        id=str(result.inserted_id),
-        email=docente.email,
-        nombre=docente.nombre,
-        apellido=docente.apellido,
-        cedula=docente.cedula,
-        departamento=docente.departamento,
-        materias_asignadas=docente.materias_asignadas,
-        grupos_asignados=docente.grupos_asignados,
-        fecha_registro=nuevo_docente["fecha_registro"]
-    )
+    return {
+        "id": docente_id,
+        "email": docente.email,
+        "nombre": docente.nombre,
+        "carrera": docente.carrera,
+        "materias": docente.materias,
+        "password_temporal": password_default,
+        "mensaje": "Docente creado. Debe cambiar su contraseña en el primer login."
+    }
 
-@router.get("/docentes", response_model=List[DocenteResponse])
+@router.get("/docentes")
 async def listar_docentes(current_user: Dict = Depends(get_current_user)):
     """Lista todos los docentes"""
     if current_user["role"] != "subdecano":
@@ -62,84 +77,72 @@ async def listar_docentes(current_user: Dict = Depends(get_current_user)):
     docentes = await docentes_collection.find().to_list(length=1000)
     
     return [
-        DocenteResponse(
-            id=str(doc["_id"]),
-            email=doc["email"],
-            nombre=doc["nombre"],
-            apellido=doc["apellido"],
-            cedula=doc["cedula"],
-            departamento=doc["departamento"],
-            materias_asignadas=doc.get("materias_asignadas", []),
-            grupos_asignados=doc.get("grupos_asignados", []),
-            fecha_registro=doc["fecha_registro"]
-        )
+        {
+            "id": str(doc["_id"]),
+            "email": doc["email"],
+            "nombre": doc["nombre"],
+            "carrera": doc.get("carrera", ""),
+            "materias": doc.get("materias", []),
+            "activo": doc.get("activo", True),
+            "primer_login": doc.get("primer_login", False),
+            "fecha_registro": doc.get("fecha_registro")
+        }
         for doc in docentes
     ]
 
-@router.put("/docentes/{docente_id}", response_model=DocenteResponse)
+@router.put("/docentes/{docente_id}")
 async def actualizar_docente(
     docente_id: str,
-    datos: DocenteUpdate,
+    datos: DocenteCreateBySubdecano,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Actualiza solo las materias y grupos de un docente"""
+    """Actualiza las materias y datos de un docente"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    # Solo permitir actualizar materias y grupos asignados
-    update_data = {}
-    if datos.materias_asignadas is not None:
-        update_data["materias_asignadas"] = datos.materias_asignadas
-    if datos.grupos_asignados is not None:
-        update_data["grupos_asignados"] = datos.grupos_asignados
+    update_data = {
+        "nombre": datos.nombre,
+        "carrera": datos.carrera,
+        "materias": datos.materias
+    }
     
-    if update_data:
-        result = await docentes_collection.update_one(
-            {"_id": ObjectId(docente_id)},
-            {"$set": update_data}
-        )
-        
-        if result.matched_count == 0:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
-    
-    docente = await docentes_collection.find_one({"_id": ObjectId(docente_id)})
-    
-    return DocenteResponse(
-        id=str(docente["_id"]),
-        email=docente["email"],
-        nombre=docente["nombre"],
-        apellido=docente["apellido"],
-        cedula=docente["cedula"],
-        departamento=docente["departamento"],
-        materias_asignadas=docente.get("materias_asignadas", []),
-        grupos_asignados=docente.get("grupos_asignados", []),
-        fecha_registro=docente["fecha_registro"]
+    result = await docentes_collection.update_one(
+        {"_id": docente_id},
+        {"$set": update_data}
     )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
+    
+    return {"message": "Docente actualizado exitosamente"}
 
 @router.delete("/docentes/{docente_id}")
 async def eliminar_docente(
     docente_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Elimina un docente"""
+    """Desactiva un docente"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    result = await docentes_collection.delete_one({"_id": ObjectId(docente_id)})
+    result = await docentes_collection.update_one(
+        {"_id": docente_id},
+        {"$set": {"activo": False}}
+    )
     
-    if result.deleted_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
-    return {"message": "Docente eliminado exitosamente"}
+    return {"message": "Docente desactivado exitosamente"}
 
 # =============== GESTIÓN DE ESTUDIANTES ===============
 
-@router.post("/estudiantes", response_model=EstudianteResponse)
+@router.post("/estudiantes")
 async def crear_estudiante(
-    estudiante: EstudianteCreate,
+    estudiante: EstudianteCreateBySubdecano,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Crea un nuevo estudiante"""
+    """Crea un nuevo estudiante con contraseña por defecto"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -147,26 +150,41 @@ async def crear_estudiante(
     if existe:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email ya está registrado")
     
+    # Generar ID único para el estudiante
+    import secrets
+    estudiante_id = f"EST{secrets.randbelow(10000):04d}"
+    while await estudiantes_collection.find_one({"_id": estudiante_id}):
+        estudiante_id = f"EST{secrets.randbelow(10000):04d}"
+    
+    # Contraseña por defecto: estudiante123
+    password_default = "estudiante123"
+    
     nuevo_estudiante = {
-        **estudiante.dict(exclude={"password"}),
-        "password": hash_password(estudiante.password),
+        "_id": estudiante_id,
+        "email": estudiante.email,
+        "nombre": estudiante.nombre,
+        "password": hash_password(password_default),
+        "rol": "estudiante",
+        "carrera": estudiante.carrera,
+        "materias_cursando": estudiante.materias_cursando,
+        "activo": True,
+        "primer_login": True,  # Debe cambiar contraseña en primer login
         "fecha_registro": datetime.utcnow()
     }
     
-    result = await estudiantes_collection.insert_one(nuevo_estudiante)
+    await estudiantes_collection.insert_one(nuevo_estudiante)
     
-    return EstudianteResponse(
-        id=str(result.inserted_id),
-        email=estudiante.email,
-        nombre=estudiante.nombre,
-        apellido=estudiante.apellido,
-        cedula=estudiante.cedula,
-        carrera=estudiante.carrera,
-        nivel=estudiante.nivel,
-        fecha_registro=nuevo_estudiante["fecha_registro"]
-    )
+    return {
+        "id": estudiante_id,
+        "email": estudiante.email,
+        "nombre": estudiante.nombre,
+        "carrera": estudiante.carrera,
+        "materias_cursando": estudiante.materias_cursando,
+        "password_temporal": password_default,
+        "mensaje": "Estudiante creado. Debe cambiar su contraseña en el primer login."
+    }
 
-@router.get("/estudiantes", response_model=List[EstudianteResponse])
+@router.get("/estudiantes")
 async def listar_estudiantes(current_user: Dict = Depends(get_current_user)):
     """Lista todos los estudiantes"""
     if current_user["role"] != "subdecano":
@@ -175,34 +193,63 @@ async def listar_estudiantes(current_user: Dict = Depends(get_current_user)):
     estudiantes = await estudiantes_collection.find().to_list(length=1000)
     
     return [
-        EstudianteResponse(
-            id=str(est["_id"]),
-            email=est["email"],
-            nombre=est["nombre"],
-            apellido=est["apellido"],
-            cedula=est["cedula"],
-            carrera=est["carrera"],
-            nivel=est["nivel"],
-            fecha_registro=est["fecha_registro"]
-        )
+        {
+            "id": str(est["_id"]),
+            "email": est["email"],
+            "nombre": est["nombre"],
+            "carrera": est.get("carrera", ""),
+            "materias_cursando": est.get("materias_cursando", []),
+            "activo": est.get("activo", True),
+            "primer_login": est.get("primer_login", False),
+            "fecha_registro": est.get("fecha_registro")
+        }
         for est in estudiantes
     ]
+
+@router.put("/estudiantes/{estudiante_id}")
+async def actualizar_estudiante(
+    estudiante_id: str,
+    datos: EstudianteCreateBySubdecano,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Actualiza las materias y datos de un estudiante"""
+    if current_user["role"] != "subdecano":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
+    
+    update_data = {
+        "nombre": datos.nombre,
+        "carrera": datos.carrera,
+        "materias_cursando": datos.materias_cursando
+    }
+    
+    result = await estudiantes_collection.update_one(
+        {"_id": estudiante_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
+    
+    return {"message": "Estudiante actualizado exitosamente"}
 
 @router.delete("/estudiantes/{estudiante_id}")
 async def eliminar_estudiante(
     estudiante_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Elimina un estudiante"""
+    """Desactiva un estudiante"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    result = await estudiantes_collection.delete_one({"_id": ObjectId(estudiante_id)})
+    result = await estudiantes_collection.update_one(
+        {"_id": estudiante_id},
+        {"$set": {"activo": False}}
+    )
     
-    if result.deleted_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
     
-    return {"message": "Estudiante eliminado exitosamente"}
+    return {"message": "Estudiante desactivado exitosamente"}
 
 # =============== GESTIÓN DE SOLICITUDES ===============
 
@@ -271,24 +318,28 @@ async def actualizar_estado_solicitud(
         print(f"   Materia ID: {solicitud['materia_id']}")
         print(f"   Docente Original: {solicitud['docente_id']}")
         
-        # Buscar docentes disponibles (misma materia, NO el docente original)
+        # Buscar TODOS los docentes disponibles (NO el docente original, Y QUE ESTÉN ACTIVOS)
+        # Ya no se requiere que sea la misma materia
         import random
         docentes_disponibles = await docentes_collection.find({
-            "materias_asignadas": str(solicitud["materia_id"]),
-            "_id": {"$ne": solicitud["docente_id"]}
+            "_id": {"$ne": solicitud["docente_id"]},
+            "$or": [
+                {"activo": True},
+                {"activo": {"$exists": False}}  # Si no tienen el campo, asumir que están activos
+            ]
         }).to_list(length=100)
         
-        print(f"   Docentes disponibles: {len(docentes_disponibles)}")
+        print(f"   👥 Docentes disponibles en la carrera: {len(docentes_disponibles)}")
         
         if not docentes_disponibles:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No hay docentes disponibles para recalificar esta materia"
+                detail="No hay otros docentes disponibles en la carrera"
             )
         
         # Seleccionar uno ALEATORIO
         docente_seleccionado = random.choice(docentes_disponibles)
-        print(f"   ✅ Docente asignado aleatoriamente: {docente_seleccionado['nombre']} {docente_seleccionado['apellido']}")
+        print(f"   ✅ Docente asignado aleatoriamente: {docente_seleccionado['nombre']}")
         
         update_data["docente_recalificador_id"] = docente_seleccionado["_id"]
         update_data["estado"] = "en_revision"
@@ -380,7 +431,7 @@ async def obtener_docentes_disponibles(
     solicitud_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Obtiene lista de docentes que pueden recalificar (excluyendo el docente original)"""
+    """Obtiene lista de TODOS los docentes de la carrera (excluyendo el docente original)"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -394,22 +445,36 @@ async def obtener_docentes_disponibles(
     print(f"   Materia ID: {solicitud['materia_id']}")
     print(f"   Docente Original ID: {solicitud['docente_id']}")
     
-    # Buscar docentes que tengan esta materia asignada EXCEPTO el docente original
+    # Buscar TODOS los docentes EXCEPTO el docente original Y QUE ESTÉN ACTIVOS
+    # Ya no se requiere que tengan la misma materia asignada
     docentes = await docentes_collection.find({
-        "materias_asignadas": str(solicitud["materia_id"]),
-        "_id": {"$ne": solicitud["docente_id"]}  # Excluir docente original
+        "_id": {"$ne": solicitud["docente_id"]},  # Excluir docente original
+        "$or": [
+            {"activo": True},
+            {"activo": {"$exists": False}}  # Si no tienen el campo, asumir que están activos
+        ]
     }).to_list(length=100)
     
-    print(f"   Docentes disponibles: {len(docentes)}")
+    print(f"   👥 Docentes disponibles en la carrera: {len(docentes)}")
     
     resultado = []
     for doc in docentes:
+        # Obtener nombres de las materias asignadas
+        materias_nombres = []
+        if doc.get("materias"):
+            for materia_id_str in doc["materias"]:
+                try:
+                    materia = await materias_collection.find_one({"_id": materia_id_str})
+                    if materia:
+                        materias_nombres.append(materia["nombre"])
+                except:
+                    pass
+        
         resultado.append({
             "id": str(doc["_id"]),
-            "nombre": f"{doc['nombre']} {doc['apellido']}",
+            "nombre": doc['nombre'],
             "email": doc["email"],
-            "departamento": doc["departamento"],
-            "grupos": doc.get("grupos_asignados", [])
+            "materias": materias_nombres  # Lista de materias que dicta
         })
     
     return resultado
@@ -441,11 +506,18 @@ async def asignar_docente_recalificador(
         )
     
     # Verificar que el docente tenga esta materia asignada
-    docente = await docentes_collection.find_one({"_id": ObjectId(docente_recalificador_id)})
+    docente = await docentes_collection.find_one({"_id": docente_recalificador_id})
     if not docente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
-    if str(solicitud["materia_id"]) not in docente.get("materias_asignadas", []):
+    # ✅ Verificar que el docente esté ACTIVO
+    if docente.get("estado") != "Activo":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes asignar a un docente inactivo"
+        )
+    
+    if str(solicitud["materia_id"]) not in docente.get("materias", []):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El docente no tiene asignada esta materia"
@@ -456,7 +528,7 @@ async def asignar_docente_recalificador(
         {"_id": ObjectId(solicitud_id)},
         {
             "$set": {
-                "docente_recalificador_id": ObjectId(docente_recalificador_id),
+                "docente_recalificador_id": docente_recalificador_id,
                 "estado": "en_revision",
                 "fecha_asignacion": datetime.utcnow()
             }
@@ -465,7 +537,7 @@ async def asignar_docente_recalificador(
     
     # Notificar al docente recalificador
     await mensajes_collection.insert_one({
-        "destinatario_id": ObjectId(docente_recalificador_id),
+        "destinatario_id": docente_recalificador_id,
         "remitente": "Subdecano",
         "asunto": "Nueva recalificación asignada",
         "contenido": f"Se te ha asignado una nueva solicitud de recalificación para revisar.",

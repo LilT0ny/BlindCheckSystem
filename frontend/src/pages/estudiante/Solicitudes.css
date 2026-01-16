@@ -57,7 +57,7 @@
 
 .solicitud-card-header {
   padding: 1rem;
-  background: linear-gradient(135deg, #dc2626 0%, #7c3aed 100%);
+  background-color: #dc2626;
   color: white;
   display: flex;
   justify-content: space-between;
@@ -127,7 +127,7 @@
   align-items: center;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #dc2626 0%, #7c3aed 100%);
+  background-color: #2563eb;
   color: white;
 }
 
