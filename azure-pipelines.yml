@@ -1,0 +1,73 @@
+trigger:
+  - main # El pipeline se activará cuando hagas commit a esta rama
+
+variables:
+  # Nombres de las conexiones que acabas de crear
+  dockerRegistryServiceConnection: 'ConexionACR'
+  azureSubscriptionConnection: 'ConexionAzureRecalificacion'
+  
+  # Nombres de tus recursos en Azure
+  acrHost: 'blindcheckacr.azurecr.io'
+  backImageName: 'blindcheck-api'
+  frontImageName: 'blindcheck-front'
+  
+  # Nombres de los App Services (deben coincidir con el Portal de Azure)
+  webAppNameBack: 'API-BlindCheck'
+  # Nota: Asegúrate de crear el App Service para el front si aún no lo tienes
+  webAppNameFront: 'visual-blindcheck' 
+
+stages:
+- stage: BuildAndPush
+  displayName: 'Construir y Subir Imágenes'
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    # 1. Build & Push del Backend (FastAPI)
+    - task: Docker@2
+      displayName: 'Build and Push Backend'
+      inputs:
+        command: 'buildAndPush'
+        repository: $(backImageName)
+        dockerfile: '**/backend/Dockerfile' # Ajusta la ruta a tu carpeta de back
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(Build.BuildId)
+          latest
+
+    # 2. Build & Push del Frontend (React+Vite)
+    - task: Docker@2
+      displayName: 'Build and Push Frontend'
+      inputs:
+        command: 'buildAndPush'
+        repository: $(frontImageName)
+        dockerfile: '**/frontend/Dockerfile' # Ajusta la ruta a tu carpeta de front
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(Build.BuildId)
+          latest
+
+- stage: Deploy
+  displayName: 'Desplegar en Azure'
+  dependsOn: BuildAndPush
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    # Desplegar API
+    - task: AzureWebAppContainer@1
+      displayName: 'Deploy Backend to App Service'
+      inputs:
+        azureSubscription: $(azureSubscriptionConnection)
+        appName: $(webAppNameBack)
+        containers: '$(acrHost)/$(backImageName):$(Build.BuildId)'
+
+    # Desplegar Frontend
+    - task: AzureWebAppContainer@1
+      displayName: 'Deploy Frontend to App Service'
+      inputs:
+        azureSubscription: $(azureSubscriptionConnection)
+        appName: $(webAppNameFront)
+        containers: '$(acrHost)/$(frontImageName):$(Build.BuildId)'

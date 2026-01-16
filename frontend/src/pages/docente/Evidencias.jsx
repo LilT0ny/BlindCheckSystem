@@ -71,7 +71,7 @@ const Evidencias = () => {
 
   const handleUploadTemp = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.archivo) {
       setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'Debes seleccionar una imagen' });
       return;
@@ -224,7 +224,7 @@ const Evidencias = () => {
             <h2>📸 Mis Evidencias</h2>
             <p className="text-gray">Fotos de evaluaciones con anonimato garantizado</p>
           </div>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={() => setShowModal(true)}
           >
@@ -235,7 +235,7 @@ const Evidencias = () => {
         {evidencias.length === 0 ? (
           <div className="empty-state">
             <p>📁 No has subido evidencias aún</p>
-            <button 
+            <button
               className="btn btn-secondary"
               onClick={() => setShowModal(true)}
             >
@@ -252,8 +252,8 @@ const Evidencias = () => {
                 style={{ cursor: 'pointer' }}
               >
                 <div className="evidencia-image">
-                  <img 
-                    src={`http://localhost:8000${ev.archivo_url}`}
+                  <img
+                    src={`${import.meta.env.VITE_BACKEND_URL.replace('/api', '')}${ev.archivo_url}`}
                     alt={ev.descripcion}
                     onError={(e) => {
                       e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999"%3EImagen%3C/text%3E%3C/svg%3E';
@@ -300,7 +300,7 @@ const Evidencias = () => {
                     {step === 3 && 'Procesando...'}
                   </p>
                 </div>
-                <button 
+                <button
                   className="modal-close"
                   onClick={handleCancelar}
                   disabled={uploading}
@@ -459,8 +459,8 @@ const Evidencias = () => {
                       className="btn btn-primary"
                       onClick={handleFinalizar}
                       disabled={uploading}
-                      style={{ 
-                        fontSize: '18px', 
+                      style={{
+                        fontSize: '18px',
                         padding: '15px 30px',
                         fontWeight: 'bold',
                         width: '100%',
@@ -480,7 +480,7 @@ const Evidencias = () => {
                       Cancelar todo
                     </button>
                   </div>
-                  
+
                   <p className="text-xs text-center text-gray mt-2">
                     💡 Dibuja un rectángulo sobre el NOMBRE del estudiante para eliminarlo
                   </p>
