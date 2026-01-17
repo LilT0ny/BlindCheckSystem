@@ -4,7 +4,7 @@ trigger:
       - main
   paths:
     include:
-      - backend
+      - frontend
 
 variables:
   # Nombres de las conexiones
@@ -13,32 +13,32 @@ variables:
   
   # Nombres de recursos en Azure
   acrHost: 'blindcheckacr.azurecr.io'
-  backImageName: 'blindcheck-api'
+  frontImageName: 'blindcheck-front'
   
   # Nombre del App Service
-  webAppNameBack: 'API-BlindCheck'
+  webAppNameFront: 'visual-blindcheck'
 
 stages:
 - stage: BuildAndPush
-  displayName: 'Construir y Subir Imagen Backend'
+  displayName: 'Construir y Subir Imagen Frontend'
   jobs:
   - job: Build
     pool:
       vmImage: 'ubuntu-latest'
     steps:
     - task: Docker@2
-      displayName: 'Build and Push Backend'
+      displayName: 'Build and Push Frontend'
       inputs:
         command: 'buildAndPush'
-        repository: $(backImageName)
-        dockerfile: '**/backend/Dockerfile'
+        repository: $(frontImageName)
+        dockerfile: '**/frontend/Dockerfile'
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(Build.BuildId)
           latest
 
 - stage: Deploy
-  displayName: 'Desplegar Backend en Azure'
+  displayName: 'Desplegar Frontend en Azure'
   dependsOn: BuildAndPush
   jobs:
   - job: Deploy
@@ -46,8 +46,8 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - task: AzureWebAppContainer@1
-      displayName: 'Deploy Backend to App Service'
+      displayName: 'Deploy Frontend to App Service'
       inputs:
         azureSubscription: $(azureSubscriptionConnection)
-        appName: $(webAppNameBack)
-        containers: '$(acrHost)/$(backImageName):$(Build.BuildId)'
+        appName: $(webAppNameFront)
+        containers: '$(acrHost)/$(frontImageName):$(Build.BuildId)'
