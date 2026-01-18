@@ -36,6 +36,8 @@ jobs:
             docker compose down --remove-orphans
             # Borra imágenes viejas de más de 24h para liberar espacio
             docker image prune -a -f --filter "until=24h"
+            # Borra caché de construcción para liberar más espacio
+            docker builder prune -f
 
             # 5. Gestión de Certificados SSL (Automático)
             if [ ! -d "./certbot/conf/live/blindcheck.space" ]; then
