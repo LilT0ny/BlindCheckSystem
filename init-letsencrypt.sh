@@ -11,7 +11,7 @@ domains=(blindcheck.space)
 rsa_key_size=4096
 data_path="./certbot"
 email="anjagoni@gmail.com"
-staging=1  
+staging=1
 
 # --- MEJORA: Evitar interacción manual ---
 if [ -d "$data_path/conf/live/$domains" ]; then
