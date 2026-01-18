@@ -147,7 +147,7 @@ const Recalificaciones = () => {
               <tr>
                 <th>Estudiante (Anónimo)</th>
                 <th>Materia</th>
-                <th>Grupo</th>
+                
                 <th>Aporte</th>
                 <th>Calif. Actual</th>
                 <th>Motivo</th>
@@ -168,7 +168,6 @@ const Recalificaciones = () => {
                   <tr key={sol.id}>
                     <td><strong>{sol.estudiante_nombre_anonimo}</strong></td>
                     <td>{sol.materia_nombre}</td>
-                    <td>{sol.grupo}</td>
                     <td>{sol.aporte}</td>
                     <td><strong>{sol.calificacion_actual}/10</strong></td>
                     <td>
@@ -237,7 +236,6 @@ const Recalificaciones = () => {
                 <div className="info-solicitud">
                   <p><strong>Estudiante:</strong> {solicitudSeleccionada.estudiante_nombre_anonimo}</p>
                   <p><strong>Materia:</strong> {solicitudSeleccionada.materia_nombre}</p>
-                  <p><strong>Grupo:</strong> {solicitudSeleccionada.grupo} | <strong>Aporte:</strong> {solicitudSeleccionada.aporte}</p>
                   <p><strong>Calificación Actual:</strong> {solicitudSeleccionada.calificacion_actual}/10</p>
                   <p><strong>Motivo:</strong> {solicitudSeleccionada.motivo}</p>
                 </div>
