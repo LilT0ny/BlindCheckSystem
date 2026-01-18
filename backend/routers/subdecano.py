@@ -116,12 +116,12 @@ async def actualizar_docente(
     
     return {"message": "Docente actualizado exitosamente"}
 
-@router.delete("/docentes/{docente_id}")
-async def eliminar_docente(
+@router.put("/docentes/{docente_id}/desactivar")
+async def desactivar_docente(
     docente_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Desactiva un docente"""
+    """Desactiva un docente (mantiene datos en BD)"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -134,6 +134,22 @@ async def eliminar_docente(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
     return {"message": "Docente desactivado exitosamente"}
+
+@router.delete("/docentes/{docente_id}")
+async def eliminar_docente(
+    docente_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina permanentemente un docente de la BD"""
+    if current_user["role"] != "subdecano":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
+    
+    result = await docentes_collection.delete_one({"_id": docente_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
+    
+    return {"message": "Docente eliminado permanentemente"}
 
 # =============== GESTIÓN DE ESTUDIANTES ===============
 
@@ -232,12 +248,12 @@ async def actualizar_estudiante(
     
     return {"message": "Estudiante actualizado exitosamente"}
 
-@router.delete("/estudiantes/{estudiante_id}")
-async def eliminar_estudiante(
+@router.put("/estudiantes/{estudiante_id}/desactivar")
+async def desactivar_estudiante(
     estudiante_id: str,
     current_user: Dict = Depends(get_current_user)
 ):
-    """Desactiva un estudiante"""
+    """Desactiva un estudiante (mantiene datos en BD)"""
     if current_user["role"] != "subdecano":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
@@ -250,6 +266,22 @@ async def eliminar_estudiante(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
     
     return {"message": "Estudiante desactivado exitosamente"}
+
+@router.delete("/estudiantes/{estudiante_id}")
+async def eliminar_estudiante(
+    estudiante_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Elimina permanentemente un estudiante de la BD"""
+    if current_user["role"] != "subdecano":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
+    
+    result = await estudiantes_collection.delete_one({"_id": estudiante_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Estudiante no encontrado")
+    
+    return {"message": "Estudiante eliminado permanentemente"}
 
 # =============== GESTIÓN DE SOLICITUDES ===============
 

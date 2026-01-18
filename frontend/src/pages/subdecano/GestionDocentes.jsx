@@ -77,16 +77,35 @@ const GestionDocentes = () => {
     setConfirm({
       show: true,
       title: '⚠️ Desactivar Docente',
-      message: '¿Está seguro de que desea desactivar este docente?',
+      message: '¿Está seguro de que desea desactivar este docente? Puede reactivarlo después.',
       type: 'danger',
       action: async () => {
         try {
-          await api.delete(`/subdecano/docentes/${id}`);
+          await api.put(`/subdecano/docentes/${id}/desactivar`);
           setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Docente desactivado exitosamente' });
           cargarDatos();
         } catch (error) {
           console.error('Error:', error);
           setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al desactivar docente' });
+        }
+      }
+    });
+  };
+
+  const eliminarPermanentemente = async (id) => {
+    setConfirm({
+      show: true,
+      title: '🚨 ELIMINAR PERMANENTEMENTE',
+      message: '⚠️ ¡CUIDADO! Esta acción es irreversible. ¿Está seguro de que desea eliminar permanentemente este docente? Se perderán todos sus datos.',
+      type: 'danger',
+      action: async () => {
+        try {
+          await api.delete(`/subdecano/docentes/${id}`);
+          setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Docente eliminado permanentemente' });
+          cargarDatos();
+        } catch (error) {
+          console.error('Error:', error);
+          setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al eliminar docente' });
         }
       }
     });
@@ -188,8 +207,9 @@ const GestionDocentes = () => {
                   </td>
                   <td>
                     <div className="acciones-btn-group">
-                      <button onClick={() => editar(docente)} className="btn btn-sm btn-secondary">✏️</button>
-                      <button onClick={() => eliminar(docente.id)} className="btn btn-sm btn-error">🗑️</button>
+                      <button onClick={() => editar(docente)} className="btn btn-sm btn-secondary" title="Editar">✏️</button>
+                      <button onClick={() => eliminar(docente.id)} className="btn btn-sm btn-warning" title="Desactivar">⏸️</button>
+                      <button onClick={() => eliminarPermanentemente(docente.id)} className="btn btn-sm btn-error" title="Eliminar permanentemente">🗑️</button>
                     </div>
                   </td>
                 </tr>
