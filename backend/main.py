@@ -3,12 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from routers import auth, estudiante, subdecano, docente
 from pathlib import Path
+from seed_db import seed_data
 
 app = FastAPI(
     title="Sistema de Recalificación Anónima",
     description="API para gestión de recalificaciones académicas con anonimización",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    await seed_data()
 
 # Configuración de CORS
 app.add_middleware(
