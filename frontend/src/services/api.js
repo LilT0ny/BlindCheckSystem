@@ -1,18 +1,29 @@
 import axios from 'axios';
 
+// Variable para almacenar el token en memoria (actualizado por authStore)
+let authToken = null;
+
+export const setAuthToken = (token) => {
+  authToken = token;
+};
+
+export const getAuthToken = () => {
+  return authToken;
+};
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true  // Incluir cookies automáticamente
 });
 
-// Interceptor para agregar token a las peticiones
+// Interceptor para agregar token en memoria al header
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
     }
     return config;
   },

@@ -36,11 +36,6 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Limpiar sesión vieja si existe
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('auth-storage');
-
     try {
       const response = await api.post('/auth/login', formData);
       const { access_token, role, user_id, primer_login } = response.data;
@@ -48,6 +43,7 @@ const Login = () => {
       console.log('🔍 DEBUG LOGIN FRONTEND:');
       console.log('  Response data:', response.data);
       console.log('  primer_login:', primer_login);
+      console.log('  Token guardado en HttpOnly Cookie ✅');
       console.log('  tipo de primer_login:', typeof primer_login);
       
       // Guardar datos del login
@@ -56,8 +52,7 @@ const Login = () => {
       // Si es primer login, mostrar modal de cambio de contraseña
       if (primer_login) {
         console.log('  ✅ Mostrando modal de cambio de contraseña');
-        // Guardar token temporalmente para poder cambiar la contraseña
-        sessionStorage.setItem('token', access_token);
+        // Token está en HttpOnly Cookie - no necesitamos guardarlo
         setShowCambiarPassword(true);
         setLoading(false);
         return;
@@ -65,7 +60,7 @@ const Login = () => {
       
       console.log('  ℹ️ Login normal, redirigiendo...');
       
-      // Login normal
+      // Login normal - guardar token en memoria
       login({ id: user_id, email: formData.email, role }, access_token);
       
       // Redirigir según el rol
@@ -190,7 +185,7 @@ const Login = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? "👁️" : "🔒"}
+                {showPassword ? "👁️" : "�️‍🗨️"}
               </button>
             </div>
           </div>
