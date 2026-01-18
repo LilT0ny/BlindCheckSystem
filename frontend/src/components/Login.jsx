@@ -33,10 +33,10 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Limpiar localStorage viejo si existe
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('auth-storage');
+    // Limpiar sesión vieja si existe
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('auth-storage');
 
     try {
       const response = await api.post('/auth/login', formData);
@@ -54,7 +54,7 @@ const Login = () => {
       if (primer_login) {
         console.log('  ✅ Mostrando modal de cambio de contraseña');
         // Guardar token temporalmente para poder cambiar la contraseña
-        localStorage.setItem('token', access_token);
+        sessionStorage.setItem('token', access_token);
         setShowCambiarPassword(true);
         setLoading(false);
         return;

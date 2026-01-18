@@ -46,19 +46,9 @@ const CambiarPassword = ({ onPasswordChanged }) => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/auth/cambiar-password-forzado', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ password_nueva: passwordNueva })
+      await api.post('/auth/cambiar-password-forzado', { 
+        password_nueva: passwordNueva 
       });
-
-      if (!response.ok) {
-        throw new Error('Error al cambiar la contraseña');
-      }
 
       setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Contraseña actualizada exitosamente' });
       setTimeout(() => onPasswordChanged(), 1500);
