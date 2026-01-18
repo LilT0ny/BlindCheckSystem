@@ -51,7 +51,15 @@ esac
 staging_arg=""
 if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
-$COMPOSE run --rm --entrypoint "certbot certonly --webroot -w /var/www/certbot $staging_arg $email_arg $domain_args --rsa-key-size $rsa_key_size --agree-tos --force-renewal --non-interactive" certbot
+$COMPOSE run --rm --entrypoint "certbot certonly --webroot -w /var/www/certbot \
+    $staging_arg \
+    $email_arg \
+    $domain_args \
+    --rsa-key-size $rsa_key_size \
+    --agree-tos \
+    --force-renewal \
+    --non-interactive \
+    --break-my-certs" certbot  # <--- AÑADE --break-my-certs aquí
 
-echo "### Recargando Nginx con certificados reales..."
+echo "### Recargando Nginx..."
 $COMPOSE exec frontend nginx -s reload
