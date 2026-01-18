@@ -37,6 +37,13 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Validar dominio del correo
+    if (!formData.email.endsWith('@blindcheck.edu')) {
+      setError('El correo debe ser del dominio @blindcheck.edu');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.post('/auth/login', formData);
       const { access_token, role, user_id, primer_login } = response.data;

@@ -44,6 +44,13 @@ const GestionEstudiantes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validar dominio del correo
+    if (!formData.email.endsWith('@blindcheck.edu')) {
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'El correo debe ser del dominio @blindcheck.edu' });
+      return;
+    }
+    
     try {
       if (editando) {
         await api.put(`/subdecano/estudiantes/${editando}`, formData);

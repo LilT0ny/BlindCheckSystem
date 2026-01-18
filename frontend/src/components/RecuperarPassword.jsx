@@ -17,6 +17,12 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
       return;
     }
 
+    // Validar dominio del correo
+    if (!email.endsWith('@blindcheck.edu')) {
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'El correo debe ser del dominio @blindcheck.edu' });
+      return;
+    }
+
     setLoading(true);
 
     try {

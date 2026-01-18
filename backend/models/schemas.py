@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -15,12 +15,22 @@ class EstadoSolicitud(str, Enum):
     EN_REVISION = "en_revision"
     CALIFICADA = "calificada"
 
+# Validador de dominio de email
+def validate_blindcheck_email(email: str) -> str:
+    if not email.endswith("@blindcheck.edu"):
+        raise ValueError("El correo debe ser del dominio @blindcheck.edu")
+    return email
+
 # =============== MODELOS DE USUARIO ===============
 
 class EstudianteBase(BaseModel):
     email: EmailStr
     nombre: str
     carrera: str
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
 
 class EstudianteCreate(EstudianteBase):
     password: str
@@ -30,19 +40,23 @@ class EstudianteCreateBySubdecano(BaseModel):
     nombre: str
     carrera: str
     materias_cursando: List[str] = []
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
 
 class EstudianteUpdate(BaseModel):
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
     carrera: Optional[str] = None
-
-class EstudianteResponse(EstudianteBase):
-    id: str
-    fecha_registro: datetime
-
-class DocenteBase(BaseModel):
-    email: EmailStr
-    nombre: str
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        if v is not None:
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
 
 class DocenteCreate(DocenteBase):
     password: str
@@ -54,8 +68,32 @@ class DocenteCreateBySubdecano(BaseModel):
     carrera: str
     materias: List[str] = []
     grupos_asignados: List[str] = []
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
 
 class DocenteUpdate(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    materias: Optional[List[str]] = None
+    grupos_asignados: Optional[List[str]] = None
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        if v is not None:
+            return validate_blindcheck_email(v)
+        return v
+    nombre: str
+    carrera: str
+    materias: List[str] = []
+    grupos_asignados: List[str] = []
+
+class DocenteUpdate(BaseModel):
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
     materias: Optional[List[str]] = None
@@ -80,6 +118,10 @@ class SubdecanoResponse(SubdecanoBase):
 
 # =============== MODELOS DE AUTENTICACIÓN ===============
 
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v)
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -202,7 +244,11 @@ class MensajeUpdate(BaseModel):
 
 class CambioPasswordRequest(BaseModel):
     password_actual: str
-    password_nueva: str
+    password_nueva:
+    
+    @validator('email')
+    def email_must_be_blindcheck(cls, v):
+        return validate_blindcheck_email(v) str
 
 class CambioPasswordForzado(BaseModel):
     password_nueva: str
