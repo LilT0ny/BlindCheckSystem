@@ -56,6 +56,11 @@ class EstudianteUpdate(BaseModel):
             return validate_blindcheck_email(v)
         return v
 
+class EstudianteResponse(EstudianteBase):
+    id: str
+    materias_cursando: List[str] = []
+    fecha_registro: datetime
+
 class DocenteBase(BaseModel):
     email: EmailStr
     nombre: str
