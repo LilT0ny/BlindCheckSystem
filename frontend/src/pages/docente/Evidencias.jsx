@@ -281,9 +281,6 @@ const Evidencias = () => {
                     }}
                   />
                   <div className="evidencia-overlay">
-                    <span className="hash-badge flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> {ev.archivo_nombre_hash}
-                    </span>
                     {ev.recortada && (
                       <span className="recortada-badge flex items-center gap-1">
                         <Check className="w-3 h-3" /> Recortada
