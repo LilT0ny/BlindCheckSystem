@@ -93,8 +93,8 @@ const SubdecanoDashboard = () => {
             <Link to="/subdecano/estudiantes" className="btn btn-secondary">
               👨‍🎓 Gestionar Estudiantes
             </Link>
-            <Link to="/subdecano/materias" className="btn btn-outline">
-              📚 Materias
+            <Link to="/subdecano/materias" className="btn btn-secondary">
+              📚 Gestionar Materias
             </Link>
           </div>
         </div>

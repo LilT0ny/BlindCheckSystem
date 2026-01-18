@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import api from '../../services/api';
 import AlertModal from '../../components/AlertModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import api from '../../services/api';
 import './GestionMaterias.css';
 
 const GestionMaterias = () => {
-  const navigate = useNavigate();
   const [materias, setMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [alert, setAlert] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-
+  const [showModal, setShowModal] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [alert, setAlert] = useState({ show: false, type: 'info', title: '', message: '' });
+  const [confirm, setConfirm] = useState({ show: false, title: '', message: '', action: null, type: 'danger' });
   const [formData, setFormData] = useState({
     nombre: '',
     codigo: '',
@@ -30,10 +27,7 @@ const GestionMaterias = () => {
       const response = await api.get('/subdecano/materias');
       setMaterias(response.data);
     } catch (error) {
-      setAlert({
-        type: 'error',
-        message: 'Error al cargar materias'
-      });
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -49,65 +43,51 @@ const GestionMaterias = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.nombre || !formData.codigo) {
-      setAlert({
-        type: 'error',
-        message: 'Nombre y código son obligatorios'
-      });
-      return;
-    }
-
     try {
-      if (editingId) {
-        await api.put(`/subdecano/materias/${editingId}`, formData);
-        setAlert({
-          type: 'success',
-          message: 'Materia actualizada exitosamente'
-        });
+      if (editando) {
+        await api.put(`/subdecano/materias/${editando}`, formData);
+        setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia actualizada exitosamente' });
+        setShowModal(false);
       } else {
         await api.post('/subdecano/materias', formData);
-        setAlert({
-          type: 'success',
-          message: 'Materia creada exitosamente'
-        });
+        setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia creada exitosamente' });
+        setShowModal(false);
       }
-
-      cargarMaterias();
       resetForm();
+      cargarMaterias();
     } catch (error) {
-      setAlert({
-        type: 'error',
-        message: error.response?.data?.detail || 'Error al guardar materia'
-      });
+      console.error('Error:', error);
+      setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al guardar materia' });
     }
   };
 
-  const handleEdit = (materia) => {
+  const editar = (materia) => {
+    setEditando(materia.id);
     setFormData({
       nombre: materia.nombre,
       codigo: materia.codigo,
       descripcion: materia.descripcion || ''
     });
-    setEditingId(materia.id);
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/subdecano/materias/${id}`);
-      setAlert({
-        type: 'success',
-        message: 'Materia eliminada exitosamente'
-      });
-      cargarMaterias();
-    } catch (error) {
-      setAlert({
-        type: 'error',
-        message: error.response?.data?.detail || 'Error al eliminar materia'
-      });
-    }
-    setConfirmDelete(null);
+  const eliminar = async (id, nombre) => {
+    setConfirm({
+      show: true,
+      title: '⚠️ Eliminar Materia',
+      message: `¿Está seguro de que desea eliminar la materia "${nombre}"?`,
+      type: 'danger',
+      action: async () => {
+        try {
+          await api.delete(`/subdecano/materias/${id}`);
+          setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia eliminada exitosamente' });
+          cargarMaterias();
+        } catch (error) {
+          console.error('Error:', error);
+          setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al eliminar materia' });
+        }
+      }
+    });
   };
 
   const resetForm = () => {
@@ -116,48 +96,86 @@ const GestionMaterias = () => {
       codigo: '',
       descripcion: ''
     });
-    setEditingId(null);
-    setShowForm(false);
+    setEditando(null);
   };
 
   if (loading) {
     return (
       <Layout title="Gestión de Materias">
-        <div className="text-center mt-4">
-          <span className="loading"></span>
-          <p>Cargando materias...</p>
-        </div>
+        <div className="text-center mt-4"><span className="loading"></span></div>
       </Layout>
     );
   }
 
   return (
     <Layout title="Gestión de Materias">
-      <div className="gestion-materias">
-        <div className="header-section">
-          <h2>Gestión de Materias</h2>
-          <button 
-            className="btn btn-primary"
-            onClick={() => {
-              resetForm();
-              setShowForm(!showForm);
-            }}
-          >
-            {showForm ? '✕ Cancelar' : '+ Nueva Materia'}
+      <AlertModal 
+        show={alert.show}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, show: false })}
+      />
+      <div className="gestion-container">
+        <div className="gestion-header">
+          <h2>📚 Gestión de Materias</h2>
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary">
+            ➕ Nueva Materia
           </button>
         </div>
 
-        {alert && (
-          <AlertModal
-            type={alert.type}
-            message={alert.message}
-            onClose={() => setAlert(null)}
-          />
-        )}
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th style={{textAlign: 'center'}}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {materias.length === 0 ? (
+                <tr>
+                  <td colSpan="4" style={{textAlign: 'center', padding: '2rem'}}>
+                    No hay materias registradas
+                  </td>
+                </tr>
+              ) : (
+                materias.map(materia => (
+                  <tr key={materia.id}>
+                    <td><strong>{materia.codigo}</strong></td>
+                    <td>{materia.nombre}</td>
+                    <td>{materia.descripcion || 'Sin descripción'}</td>
+                    <td style={{textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={() => editar(materia)}
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={() => eliminar(materia.id, materia.nombre)}
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        {showForm && (
-          <div className="card form-card">
-            <h3>{editingId ? 'Editar Materia' : 'Nueva Materia'}</h3>
+      {showModal && (
+        <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{editando ? '✏️ Editar Materia' : '➕ Nueva Materia'}</h3>
+              <button className="close-btn" onClick={() => { setShowModal(false); resetForm(); }}>✕</button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Código de Materia *</label>
@@ -167,13 +185,12 @@ const GestionMaterias = () => {
                   value={formData.codigo}
                   onChange={handleInputChange}
                   placeholder="ej: CS-301"
+                  disabled={!!editando}
                   required
-                  disabled={!!editingId}
                 />
               </div>
-
               <div className="form-group">
-                <label>Nombre de la Materia *</label>
+                <label>Nombre *</label>
                 <input
                   type="text"
                   name="nombre"
@@ -183,7 +200,6 @@ const GestionMaterias = () => {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label>Descripción</label>
                 <textarea
@@ -194,91 +210,30 @@ const GestionMaterias = () => {
                   rows="4"
                 />
               </div>
-
-              <div className="form-actions">
-                <button type="submit" className="btn btn-success">
-                  {editingId ? 'Actualizar' : 'Crear'} Materia
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">
+                  {editando ? 'Actualizar' : 'Crear'} Materia
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-outline"
-                  onClick={resetForm}
-                >
+                <button type="button" className="btn btn-outline" onClick={() => { setShowModal(false); resetForm(); }}>
                   Cancelar
                 </button>
               </div>
             </form>
           </div>
-        )}
-
-        <div className="stats-section">
-          <div className="stat-box">
-            <div className="stat-number">{materias.length}</div>
-            <div className="stat-label">Materias</div>
-          </div>
         </div>
+      )}
 
-        {materias.length === 0 ? (
-          <div className="card empty-state">
-            <p>No hay materias registradas</p>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowForm(true)}
-            >
-              Crear primera materia
-            </button>
-          </div>
-        ) : (
-          <div className="card">
-            <div className="table-responsive">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {materias.map(materia => (
-                    <tr key={materia.id}>
-                      <td className="code">{materia.codigo}</td>
-                      <td>{materia.nombre}</td>
-                      <td className="description">
-                        {materia.descripcion || 'Sin descripción'}
-                      </td>
-                      <td className="actions">
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => handleEdit(materia)}
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => setConfirmDelete(materia)}
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {confirmDelete && (
-          <ConfirmModal
-            title="Eliminar Materia"
-            message={`¿Estás seguro de que deseas eliminar la materia "${confirmDelete.nombre}"?`}
-            onConfirm={() => handleDelete(confirmDelete.id)}
-            onCancel={() => setConfirmDelete(null)}
-          />
-        )}
-      </div>
+      {confirm.show && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          onConfirm={() => {
+            confirm.action();
+            setConfirm({ show: false, title: '', message: '', action: null, type: 'danger' });
+          }}
+          onCancel={() => setConfirm({ show: false, title: '', message: '', action: null, type: 'danger' })}
+        />
+      )}
     </Layout>
   );
 };
