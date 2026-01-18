@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Key, Mail, CheckCircle, AlertTriangle, XCircle, FileText, Send } from 'lucide-react';
 import AlertModal from './AlertModal';
 import api from '../services/api';
 import './RecuperarPassword.css';
@@ -10,9 +11,9 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email) {
-      setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'Debes ingresar tu email' });
+      setAlert({ show: true, type: 'warning', title: 'Aviso', message: 'Debes ingresar tu email' });
       return;
     }
 
@@ -20,11 +21,11 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
 
     try {
       const response = await api.post('/auth/solicitar-reset-password', { email });
-      
+
       setAlert({
         show: true,
         type: 'success',
-        title: '✅ Solicitud Enviada',
+        title: 'Solicitud Enviada',
         message: response.data.message
       });
 
@@ -37,7 +38,7 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
       setAlert({
         show: true,
         type: 'error',
-        title: '❌ Error',
+        title: 'Error',
         message: error.response?.data?.detail || 'Error al enviar la solicitud'
       });
     } finally {
@@ -56,13 +57,17 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
       />
       <div className="recuperar-modal">
         <div className="recuperar-header">
-          <h2>🔑 Recuperar Contraseña</h2>
+          <h2 className="flex items-center gap-2">
+            <Key className="w-6 h-6" /> Recuperar Contraseña
+          </h2>
           <p>Ingresa tu email y contacta al subdecano para obtener una nueva contraseña.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email Registrado</label>
+            <label className="flex items-center gap-2">
+              <Mail className="w-4 h-4" /> Email Registrado
+            </label>
             <input
               type="email"
               className="form-control"
@@ -85,15 +90,17 @@ const RecuperarPassword = ({ onClose, onSuccess }) => {
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn btn-primary flex items-center gap-2"
               disabled={loading}
             >
-              {loading ? 'Enviando...' : 'Solicitar Reset'}
+              {loading ? 'Enviando...' : <><Send className="w-4 h-4" /> Solicitar Reset</>}
             </button>
           </div>
 
           <div className="info-box">
-            <p>📋 <strong>Instrucciones:</strong></p>
+            <p className="flex items-center gap-2">
+              <FileText className="w-4 h-4" /> <strong>Instrucciones:</strong>
+            </p>
             <ul>
               <li>Enviaremos una solicitud al subdecano</li>
               <li>El subdecano generará una contraseña temporal</li>
