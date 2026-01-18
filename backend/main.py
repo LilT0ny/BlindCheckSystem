@@ -19,7 +19,8 @@ async def startup_event():
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://blindcheck.space", "http://blindcheck.space"],
+    # Permitir todos los orígenes para evitar dolores de cabeza con CORS
+    allow_origin_regex=".*", 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
