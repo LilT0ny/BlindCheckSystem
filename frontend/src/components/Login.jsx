@@ -190,7 +190,7 @@ const Login = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? "👁️" : "�"}
+                {showPassword ? "👁️" : "🔒"}
               </button>
             </div>
           </div>
