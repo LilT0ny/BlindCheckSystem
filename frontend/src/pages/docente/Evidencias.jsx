@@ -436,7 +436,7 @@ const Evidencias = () => {
               {step === 2 && tempData && (
                 <div className="crop-step">
                   <ImagePixelator
-                    imageUrl={`http://localhost:8000${tempData.preview_url}`}
+                    imageUrl={tempData.preview_url}
                     onAreaSelected={handleAreaSelected}
                   />
 
