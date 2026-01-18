@@ -260,6 +260,15 @@ async def subir_evidencia_temporal(
     current_user: Dict = Depends(get_current_user)
 ):
     """Sube evidencia temporal para previsualización y recorte"""
+    print(f"\n🔍 DEBUG UPLOAD-TEMP:")
+    print(f"   archivo: {archivo.filename if archivo else 'None'}")
+    print(f"   content_type: {archivo.content_type if archivo else 'None'}")
+    print(f"   estudiante_id: {estudiante_id}")
+    print(f"   materia_id: {materia_id}")
+    print(f"   grupo: {grupo}")
+    print(f"   aporte: {aporte}")
+    print(f"   current_user: {current_user.get('user_id')}")
+    
     if current_user["role"] != "docente":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
