@@ -6,8 +6,6 @@ import ImagePixelator from '../../components/ImagePixelator';
 import api from '../../services/api';
 import './Evidencias.css';
 import { buildFileUrl } from '../../utils/url';
-import { Camera, Lock, Check, X } from 'lucide-react';
-
 
 const Evidencias = () => {
   const [evidencias, setEvidencias] = useState([]);
