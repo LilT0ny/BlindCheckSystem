@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Response
+from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import Dict
@@ -11,27 +11,7 @@ from config import settings
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, response: Response):
-    """Endpoint de inicio de sesión para todos los roles"""
-    
-    print(f"\n🔍 DEBUG LOGIN:")
-    print(f"   Email: {login_data.email}")
-    print(f"   Role: {login_data.role}")
-    
-    # Seleccionar la colección según el rol
-    if login_data.role == UserRole.ESTUDIANTE:
-        collection = estudiantes_collection
-    elif login_data.role == UserRole.DOCENTE:
-        collection = docentes_collection
-    elif login_data.role == UserRole.SUBDECANO:
-        collection = subdecanos_collection
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rol no válido"
-        )
-    
-    # Buscar usuario por email
+
 async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Login para todos los roles (estudiante, docente, subdecano)
