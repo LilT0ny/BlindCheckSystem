@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import Dict
@@ -11,7 +11,7 @@ from config import settings
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest):
+async def login(login_data: LoginRequest, response: Response):
     """Endpoint de inicio de sesión para todos los roles"""
     
     print(f"\n🔍 DEBUG LOGIN:")
@@ -74,6 +74,16 @@ async def login(login_data: LoginRequest):
         expires_delta=access_token_expires
     )
     
+    # Configurar cookie HttpOnly (segura)
+    # SIN max_age = cookie de sesión (se cierra al cerrar navegador)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,  # No accesible desde JavaScript (seguridad)
+        secure=False,  # Cambiar a True en producción (HTTPS)
+        samesite="lax"  # Protección contra CSRF
+    )
+    
     response_data = {
         "access_token": access_token,
         "token_type": "bearer",
@@ -87,9 +97,28 @@ async def login(login_data: LoginRequest):
     return response_data
 
 @router.post("/verify-token")
-async def verify_token_endpoint(current_user: Dict = Depends(lambda: None)):
+async def verify_token_endpoint(current_user: Dict = Depends(get_current_user)):
     """Verifica si un token es válido"""
     return {"valid": True, "user": current_user}
+
+@router.get("/me")
+async def get_me(current_user: Dict = Depends(get_current_user)):
+    """Obtiene la información del usuario actual desde el token"""
+    return {
+        "user_id": current_user["user_id"],
+        "email": current_user["email"],
+        "role": current_user["role"]
+    }
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Cierra la sesión (borra la cookie)"""
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="lax"
+    )
+    return {"message": "Sesión cerrada exitosamente"}
 
 @router.post("/cambiar-password-forzado")
 async def cambiar_password_forzado(

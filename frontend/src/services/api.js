@@ -10,7 +10,19 @@ const api = axios.create({
 // Interceptor para agregar token a las peticiones
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('token');
+    // Primero intentar desde sessionStorage (compatibilidad con código anterior)
+    let token = sessionStorage.getItem('token');
+    
+    // Si no hay en sessionStorage, intentar desde Zustand
+    if (!token) {
+      try {
+        const authStoreModule = require('../store/authStore');
+        token = authStoreModule.useAuthStore.getState().token;
+      } catch (e) {
+        // Si falla, continuar sin token
+      }
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,6 +40,15 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      
+      // También limpiar Zustand si está disponible
+      try {
+        const authStoreModule = require('../store/authStore');
+        authStoreModule.useAuthStore.getState().logout();
+      } catch (e) {
+        // Continuar si falla
+      }
+      
       window.location.href = '/login';
     }
     return Promise.reject(error);

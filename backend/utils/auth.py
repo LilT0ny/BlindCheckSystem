@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Crea un token JWT"""
@@ -27,15 +27,25 @@ def verify_token(token: str):
     except JWTError:
         return None
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    """Obtiene el usuario actual desde el token"""
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)):
+    """Obtiene el usuario actual desde la cookie o el header Authorization"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudo validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    payload = verify_token(token)
+    # Primero, intentar obtener el token de la cookie
+    token_from_cookie = request.cookies.get("access_token")
+    
+    # Si no está en la cookie, usar el token del header (por si acaso)
+    if not token_from_cookie:
+        token_from_cookie = token
+    
+    if not token_from_cookie:
+        raise credentials_exception
+    
+    payload = verify_token(token_from_cookie)
     if payload is None:
         raise credentials_exception
     

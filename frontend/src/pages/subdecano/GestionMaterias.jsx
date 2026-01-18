@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -46,18 +47,18 @@ const GestionMaterias = () => {
     try {
       if (editando) {
         await api.put(`/subdecano/materias/${editando}`, formData);
-        setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia actualizada exitosamente' });
+        setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Materia actualizada exitosamente' });
         setShowModal(false);
       } else {
         await api.post('/subdecano/materias', formData);
-        setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia creada exitosamente' });
+        setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Materia creada exitosamente' });
         setShowModal(false);
       }
       resetForm();
       cargarMaterias();
     } catch (error) {
       console.error('Error:', error);
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al guardar materia' });
+      setAlert({ show: true, type: 'error', title: 'Error', message: error.response?.data?.detail || 'Error al guardar materia' });
     }
   };
 
@@ -74,17 +75,17 @@ const GestionMaterias = () => {
   const eliminar = async (id, nombre) => {
     setConfirm({
       show: true,
-      title: '⚠️ Eliminar Materia',
+      title: 'Eliminar Materia',
       message: `¿Está seguro de que desea eliminar la materia "${nombre}"?`,
       type: 'danger',
       action: async () => {
         try {
           await api.delete(`/subdecano/materias/${id}`);
-          setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Materia eliminada exitosamente' });
+          setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Materia eliminada exitosamente' });
           cargarMaterias();
         } catch (error) {
           console.error('Error:', error);
-          setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al eliminar materia' });
+          setAlert({ show: true, type: 'error', title: 'Error', message: error.response?.data?.detail || 'Error al eliminar materia' });
         }
       }
     });
@@ -109,7 +110,7 @@ const GestionMaterias = () => {
 
   return (
     <Layout title="Gestión de Materias">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
@@ -118,9 +119,9 @@ const GestionMaterias = () => {
       />
       <div className="gestion-container">
         <div className="gestion-header">
-          <h2>📚 Gestión de Materias</h2>
-          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary">
-            ➕ Nueva Materia
+          <h2><BookOpen className="inline-block mr-2" size={24} /> Gestión de Materias</h2>
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary gap-2">
+            <Plus size={20} /> Nueva Materia
           </button>
         </div>
 
@@ -131,13 +132,13 @@ const GestionMaterias = () => {
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th style={{textAlign: 'center'}}>Acciones</th>
+                <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {materias.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{textAlign: 'center', padding: '2rem'}}>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>
                     No hay materias registradas
                   </td>
                 </tr>
@@ -147,18 +148,18 @@ const GestionMaterias = () => {
                     <td><strong>{materia.codigo}</strong></td>
                     <td>{materia.nombre}</td>
                     <td>{materia.descripcion || 'Sin descripción'}</td>
-                    <td style={{textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center'}}>
-                      <button 
+                    <td style={{ textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                      <button
                         className="btn btn-sm btn-primary"
                         onClick={() => editar(materia)}
                       >
-                        ✏️ Editar
+                        <Pencil size={16} /> Editar
                       </button>
-                      <button 
+                      <button
                         className="btn btn-sm btn-danger"
                         onClick={() => eliminar(materia.id, materia.nombre)}
                       >
-                        🗑️ Eliminar
+                        <Trash2 size={16} /> Eliminar
                       </button>
                     </td>
                   </tr>
@@ -173,7 +174,7 @@ const GestionMaterias = () => {
         <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editando ? '✏️ Editar Materia' : '➕ Nueva Materia'}</h3>
+              <h3>{editando ? <><Pencil className="inline mr-2" size={20} /> Editar Materia</> : <><Plus className="inline mr-2" size={20} /> Nueva Materia</>}</h3>
               <button className="close-btn" onClick={() => { setShowModal(false); resetForm(); }}>✕</button>
             </div>
             <form onSubmit={handleSubmit}>

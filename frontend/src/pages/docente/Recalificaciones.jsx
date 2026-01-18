@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ClipboardList, Paperclip, Edit, Check, CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import api from '../../services/api';
@@ -45,11 +46,11 @@ const Recalificaciones = () => {
         const url = `${import.meta.env.VITE_BACKEND_URL.replace('/api', '')}${response.data.archivo_url}`;
         window.open(url, '_blank');
       } else {
-        setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'No se encontró evidencia para esta solicitud' });
+        setAlert({ show: true, type: 'warning', title: 'Aviso', message: 'No se encontró evidencia para esta solicitud' });
       }
     } catch (error) {
       console.error('Error:', error);
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al obtener evidencia: ' + (error.response?.data?.detail || 'Error desconocido') });
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'Error al obtener evidencia: ' + (error.response?.data?.detail || 'Error desconocido') });
     }
   };
 
@@ -58,7 +59,7 @@ const Recalificaciones = () => {
 
     const nota = parseFloat(formCalificacion.nota);
     if (isNaN(nota) || nota < 0 || nota > 10) {
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Calificación debe estar entre 0 y 10' });
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'Calificación debe estar entre 0 y 10' });
       return;
     }
 
@@ -67,12 +68,12 @@ const Recalificaciones = () => {
         nota: nota,
         comentario: formCalificacion.comentario
       });
-      setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Calificación registrada exitosamente' });
+      setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Calificación registrada exitosamente' });
       setShowModal(false);
       cargarRecalificaciones();
     } catch (error) {
       console.error('Error:', error);
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al calificar: ' + (error.response?.data?.detail || 'Error desconocido') });
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'Error al calificar: ' + (error.response?.data?.detail || 'Error desconocido') });
     }
   };
 
@@ -104,7 +105,7 @@ const Recalificaciones = () => {
 
   return (
     <Layout title="Recalificaciones">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
@@ -113,7 +114,9 @@ const Recalificaciones = () => {
       />
       <div className="recalificaciones-container">
         <div className="recalificaciones-header">
-          <h2>📝 Recalificaciones Asignadas</h2>
+          <h2 className="flex items-center gap-2">
+            <ClipboardList className="w-6 h-6" /> Recalificaciones Asignadas
+          </h2>
         </div>
 
         <div className="filtros">
@@ -182,21 +185,23 @@ const Recalificaciones = () => {
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => verEvidencia(sol)}
-                          className="btn btn-sm btn-info"
+                          className="btn btn-sm btn-info flex items-center gap-1"
                           title="Ver evidencia del estudiante"
                         >
-                          📎 Ver Evidencia
+                          <Paperclip className="w-4 h-4" /> Ver Evidencia
                         </button>
                         {(sol.estado === 'aprobada' || sol.estado === 'en_revision') && (
                           <button
                             onClick={() => abrirModalCalificar(sol)}
-                            className="btn btn-sm btn-primary"
+                            className="btn btn-sm btn-primary flex items-center gap-1"
                           >
-                            ✏️ Calificar
+                            <Edit className="w-4 h-4" /> Calificar
                           </button>
                         )}
                         {sol.estado === 'calificada' && (
-                          <span className="text-success">✓ Calificada</span>
+                          <span className="text-success flex items-center gap-1">
+                            <Check className="w-4 h-4" /> Calificada
+                          </span>
                         )}
                       </div>
                     </td>
@@ -223,7 +228,7 @@ const Recalificaciones = () => {
                   className="modal-close"
                   onClick={() => setShowModal(false)}
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -274,9 +279,9 @@ const Recalificaciones = () => {
                     </button>
                     <button
                       type="submit"
-                      className="btn btn-primary"
+                      className="btn btn-primary flex items-center justify-center gap-2"
                     >
-                      ✅ Registrar Calificación
+                      <CheckCircle className="w-5 h-5" /> Registrar Calificación
                     </button>
                   </div>
                 </form>

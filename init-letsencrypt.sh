@@ -11,7 +11,7 @@ domains=(blindcheck.space)
 rsa_key_size=4096
 data_path="./certbot"
 email="anjagoni@gmail.com"
-staging=0  
+staging=1
 
 # --- MEJORA: Evitar interacción manual ---
 if [ -d "$data_path/conf/live/$domains" ]; then
@@ -59,6 +59,7 @@ $COMPOSE run --rm --entrypoint "certbot certonly --webroot -w /var/www/certbot \
     --agree-tos \
     --force-renewal \
     --non-interactive \
+    --break-my-certs \
     --cert-name blindcheck.space" certbot
 
 echo "### Recargando Nginx..."

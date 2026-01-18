@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ClipboardList, KeyRound, GraduationCap, Users, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import api from '../../services/api';
@@ -84,20 +85,20 @@ const SubdecanoDashboard = () => {
             <h2 className="card-title">Gestión</h2>
           </div>
           <div className="quick-actions">
-            <Link to="/subdecano/solicitudes" className="btn btn-primary">
-              📋 Ver Solicitudes
+            <Link to="/subdecano/solicitudes" className="btn btn-primary gap-2">
+              <ClipboardList size={20} /> Ver Solicitudes
             </Link>
-            <Link to="/subdecano/reset-password" className="btn btn-warning">
-              🔑 Reset de Contraseña
+            <Link to="/subdecano/reset-password" className="btn btn-warning gap-2">
+              <KeyRound size={20} /> Reset de Contraseña
             </Link>
-            <Link to="/subdecano/docentes" className="btn btn-secondary">
-              👨‍🏫 Gestionar Docentes
+            <Link to="/subdecano/docentes" className="btn btn-secondary gap-2">
+              <GraduationCap size={20} /> Gestionar Docentes
             </Link>
-            <Link to="/subdecano/estudiantes" className="btn btn-secondary">
-              👨‍🎓 Gestionar Estudiantes
+            <Link to="/subdecano/estudiantes" className="btn btn-secondary gap-2">
+              <Users size={20} /> Gestionar Estudiantes
             </Link>
-            <Link to="/subdecano/materias" className="btn btn-secondary">
-              📚 Gestionar Materias
+            <Link to="/subdecano/materias" className="btn btn-secondary gap-2">
+              <BookOpen size={20} /> Gestionar Materias
             </Link>
           </div>
         </div>
@@ -132,7 +133,7 @@ const SubdecanoDashboard = () => {
                       <span className={`badge ${getEstadoBadge(sol.estado)}`}>
                         {sol.estado}
                       </span>
-                      <Link 
+                      <Link
                         to="/subdecano/solicitudes"
                         className="btn btn-secondary"
                       >

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Lock, CheckCircle, AlertTriangle, Save, RefreshCw } from 'lucide-react';
 import AlertModal from './AlertModal';
 import api from '../services/api';
 import './CambiarPassword.css';
@@ -46,11 +47,11 @@ const CambiarPassword = ({ onPasswordChanged }) => {
     setLoading(true);
 
     try {
-      await api.post('/auth/cambiar-password-forzado', { 
-        password_nueva: passwordNueva 
+      await api.post('/auth/cambiar-password-forzado', {
+        password_nueva: passwordNueva
       });
 
-      setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Contraseña actualizada exitosamente' });
+      setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Contraseña actualizada exitosamente' });
       setTimeout(() => onPasswordChanged(), 1500);
     } catch (error) {
       console.error('Error:', error);
@@ -62,7 +63,7 @@ const CambiarPassword = ({ onPasswordChanged }) => {
 
   return (
     <div className="cambiar-password-overlay">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
@@ -71,13 +72,17 @@ const CambiarPassword = ({ onPasswordChanged }) => {
       />
       <div className="cambiar-password-modal">
         <div className="cambiar-password-header">
-          <h2>🔒 Cambio de Contraseña Obligatorio</h2>
+          <h2 className="flex items-center gap-2">
+            <Lock className="w-6 h-6" /> Cambio de Contraseña Obligatorio
+          </h2>
           <p>Es tu primer inicio de sesión. Debes cambiar tu contraseña para continuar.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Nueva Contraseña</label>
+            <label className="flex items-center gap-2">
+              <Lock className="w-4 h-4" /> Nueva Contraseña
+            </label>
             <input
               type="password"
               className="form-control"
@@ -90,7 +95,9 @@ const CambiarPassword = ({ onPasswordChanged }) => {
           </div>
 
           <div className="form-group">
-            <label>Confirmar Contraseña</label>
+            <label className="flex items-center gap-2">
+              <Lock className="w-4 h-4" /> Confirmar Contraseña
+            </label>
             <input
               type="password"
               className="form-control"
@@ -102,17 +109,25 @@ const CambiarPassword = ({ onPasswordChanged }) => {
           </div>
 
           {error && (
-            <div className="error-message">
-              ⚠️ {error}
+            <div className="error-message flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> {error}
             </div>
           )}
 
-          <button 
-            type="submit" 
-            className="btn btn-primary btn-block"
+          <button
+            type="submit"
+            className="btn btn-primary btn-block flex items-center justify-center gap-2"
             disabled={loading}
           >
-            {loading ? 'Actualizando...' : 'Cambiar Contraseña'}
+            {loading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" /> Actualizando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Cambiar Contraseña
+              </>
+            )}
           </button>
 
           <div className="password-requirements">

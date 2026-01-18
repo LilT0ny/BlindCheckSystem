@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GraduationCap, Plus, Pencil, PauseCircle, Trash2, CheckCircle, XCircle, AlertTriangle, KeyRound, ClipboardCopy } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -46,7 +47,7 @@ const GestionDocentes = () => {
     try {
       if (editando) {
         await api.put(`/subdecano/docentes/${editando}`, formData);
-        setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Docente actualizado exitosamente' });
+        setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Docente actualizado exitosamente' });
         setShowModal(false);
       } else {
         const res = await api.post('/subdecano/docentes', formData);
@@ -58,7 +59,7 @@ const GestionDocentes = () => {
       cargarDatos();
     } catch (error) {
       console.error('Error:', error);
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al guardar docente' });
+      setAlert({ show: true, type: 'error', title: 'Error', message: error.response?.data?.detail || 'Error al guardar docente' });
     }
   };
 
@@ -76,13 +77,13 @@ const GestionDocentes = () => {
   const eliminar = async (id) => {
     setConfirm({
       show: true,
-      title: '⚠️ Desactivar Docente',
+      title: 'Desactivar Docente',
       message: '¿Está seguro de que desea desactivar este docente? Puede reactivarlo después.',
       type: 'danger',
       action: async () => {
         try {
           await api.put(`/subdecano/docentes/${id}/desactivar`);
-          setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Docente desactivado exitosamente' });
+          setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Docente desactivado exitosamente' });
           cargarDatos();
         } catch (error) {
           console.error('Error:', error);
@@ -95,13 +96,13 @@ const GestionDocentes = () => {
   const eliminarPermanentemente = async (id) => {
     setConfirm({
       show: true,
-      title: '🚨 ELIMINAR PERMANENTEMENTE',
-      message: '⚠️ ¡CUIDADO! Esta acción es irreversible. ¿Está seguro de que desea eliminar permanentemente este docente? Se perderán todos sus datos.',
+      title: 'ELIMINAR PERMANENTEMENTE',
+      message: '¡CUIDADO! Esta acción es irreversible. ¿Está seguro de que desea eliminar permanentemente este docente? Se perderán todos sus datos.',
       type: 'danger',
       action: async () => {
         try {
           await api.delete(`/subdecano/docentes/${id}`);
-          setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Docente eliminado permanentemente' });
+          setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Docente eliminado permanentemente' });
           cargarDatos();
         } catch (error) {
           console.error('Error:', error);
@@ -137,7 +138,7 @@ const GestionDocentes = () => {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(passwordTemporal);
-    setAlert({ show: true, type: 'info', title: 'ℹ️ Copiar', message: 'Contraseña copiada al portapapeles' });
+    setAlert({ show: true, type: 'info', title: 'Copiar', message: 'Contraseña copiada al portapapeles' });
   };
 
   if (loading) {
@@ -150,7 +151,7 @@ const GestionDocentes = () => {
 
   return (
     <Layout title="Gestión de Docentes">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
@@ -159,9 +160,9 @@ const GestionDocentes = () => {
       />
       <div className="gestion-container">
         <div className="gestion-header">
-          <h2>👨‍🏫 Gestión de Docentes</h2>
-          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary">
-            ➕ Nuevo Docente
+          <h2><GraduationCap className="inline-block mr-2" size={24} /> Gestión de Docentes</h2>
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary gap-2">
+            <Plus size={20} /> Nuevo Docente
           </button>
         </div>
 
@@ -196,20 +197,20 @@ const GestionDocentes = () => {
                   </td>
                   <td>
                     <span className={`badge ${docente.activo ? 'badge-success' : 'badge-danger'}`}>
-                      {docente.activo ? '✓ Activo' : '✗ Inactivo'}
+                      {docente.activo ? <><CheckCircle size={14} className="inline mr-1" /> Activo</> : <><XCircle size={14} className="inline mr-1" /> Inactivo</>}
                     </span>
                   </td>
                   <td>
-                    {docente.primer_login ? 
-                      <span className="badge badge-warning">⚠️ Pendiente</span> : 
-                      <span className="badge badge-success">✓ Completado</span>
+                    {docente.primer_login ?
+                      <span className="badge badge-warning"><AlertTriangle size={14} className="inline mr-1" /> Pendiente</span> :
+                      <span className="badge badge-success"><CheckCircle size={14} className="inline mr-1" /> Completado</span>
                     }
                   </td>
                   <td>
                     <div className="acciones-btn-group">
-                      <button onClick={() => editar(docente)} className="btn btn-sm btn-secondary" title="Editar">✏️</button>
-                      <button onClick={() => eliminar(docente.id)} className="btn btn-sm btn-warning" title="Desactivar">⏸️</button>
-                      <button onClick={() => eliminarPermanentemente(docente.id)} className="btn btn-sm btn-error" title="Eliminar permanentemente">🗑️</button>
+                      <button onClick={() => editar(docente)} className="btn btn-sm btn-secondary" title="Editar"><Pencil size={16} /></button>
+                      <button onClick={() => eliminar(docente.id)} className="btn btn-sm btn-warning" title="Desactivar"><PauseCircle size={16} /></button>
+                      <button onClick={() => eliminarPermanentemente(docente.id)} className="btn btn-sm btn-error" title="Eliminar permanentemente"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -223,7 +224,7 @@ const GestionDocentes = () => {
           <div className="modal-overlay" onClick={() => setShowModal(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{editando ? '✏️ Editar Docente' : '➕ Nuevo Docente'}</h3>
+                <h3>{editando ? <><Pencil className="inline mr-2" size={20} /> Editar Docente</> : <><Plus className="inline mr-2" size={20} /> Nuevo Docente</>}</h3>
                 <button className="btn-close" onClick={() => setShowModal(false)}>✖</button>
               </div>
               <form onSubmit={handleSubmit}>
@@ -233,7 +234,7 @@ const GestionDocentes = () => {
                     type="email"
                     className="form-control"
                     value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                     required
                     disabled={editando}
                   />
@@ -245,7 +246,7 @@ const GestionDocentes = () => {
                     type="text"
                     className="form-control"
                     value={formData.nombre}
-                    onChange={e => setFormData({...formData, nombre: e.target.value})}
+                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
                     required
                   />
                 </div>
@@ -256,7 +257,7 @@ const GestionDocentes = () => {
                     type="text"
                     className="form-control"
                     value={formData.carrera}
-                    onChange={e => setFormData({...formData, carrera: e.target.value})}
+                    onChange={e => setFormData({ ...formData, carrera: e.target.value })}
                     required
                   />
                 </div>
@@ -295,12 +296,12 @@ const GestionDocentes = () => {
           <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
             <div className="modal-content password-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>🔑 Credenciales Generadas</h3>
+                <h3><KeyRound className="inline-block mr-2" size={24} /> Credenciales Generadas</h3>
                 <button className="btn-close" onClick={() => setShowPasswordModal(false)}>✖</button>
               </div>
               <div className="password-info">
-                <p className="warning-text">
-                  ⚠️ <strong>IMPORTANTE:</strong> Guarda estas credenciales. No podrás verlas nuevamente.
+                <p className="warning-text flex items-center justify-center gap-2">
+                  <AlertTriangle size={18} /> <strong>IMPORTANTE:</strong> Guarda estas credenciales. No podrás verlas nuevamente.
                 </p>
                 <div className="credential-box">
                   <label>Email:</label>
@@ -310,12 +311,12 @@ const GestionDocentes = () => {
                   <label>Contraseña Temporal:</label>
                   <div className="credential-value password-value">
                     {passwordTemporal}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-sm btn-copy"
                       onClick={copyToClipboard}
                     >
-                      📋 Copiar
+                      <ClipboardCopy size={16} /> Copiar
                     </button>
                   </div>
                 </div>
@@ -332,7 +333,7 @@ const GestionDocentes = () => {
           </div>
         )}
 
-        <AlertModal 
+        <AlertModal
           show={alert.show}
           type={alert.type}
           title={alert.title}

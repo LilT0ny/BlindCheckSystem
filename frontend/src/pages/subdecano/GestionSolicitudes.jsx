@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ClipboardList, Check, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
@@ -32,7 +33,7 @@ const GestionSolicitudes = () => {
     const isAprobacion = nuevoEstado === 'aprobada';
     setConfirm({
       show: true,
-      title: isAprobacion ? '✅ Aprobar Solicitud' : '❌ Rechazar Solicitud',
+      title: isAprobacion ? 'Aprobar Solicitud' : 'Rechazar Solicitud',
       message: `¿Confirmar ${isAprobacion ? 'aprobación' : 'rechazo'} de esta solicitud?`,
       type: isAprobacion ? 'warning' : 'danger',
       action: async () => {
@@ -40,17 +41,17 @@ const GestionSolicitudes = () => {
           await api.put(`/subdecano/solicitudes/${solicitudId}/estado`, {
             estado: nuevoEstado
           });
-          
+
           if (isAprobacion) {
-            setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Solicitud aprobada. Se ha asignado automáticamente un docente recalificador.' });
+            setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Solicitud aprobada. Se ha asignado automáticamente un docente recalificador.' });
           } else {
-            setAlert({ show: true, type: 'success', title: '✅ Éxito', message: 'Solicitud rechazada exitosamente' });
+            setAlert({ show: true, type: 'success', title: 'Éxito', message: 'Solicitud rechazada exitosamente' });
           }
-          
+
           cargarSolicitudes();
         } catch (error) {
           console.error('Error:', error);
-          setAlert({ show: true, type: 'error', title: '❌ Error', message: error.response?.data?.detail || 'Error al actualizar solicitud' });
+          setAlert({ show: true, type: 'error', title: 'Error', message: error.response?.data?.detail || 'Error al actualizar solicitud' });
         } finally {
           setConfirm({ ...confirm, show: false });
         }
@@ -84,25 +85,25 @@ const GestionSolicitudes = () => {
 
   return (
     <Layout title="Gestión de Solicitudes">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
         message={alert.message}
         onClose={() => setAlert({ ...alert, show: false })}
       />
-      <ConfirmModal 
+      <ConfirmModal
         show={confirm.show}
         title={confirm.title}
         message={confirm.message}
         type={confirm.type}
-        confirmText={confirm.type === 'danger' ? '❌ Rechazar' : '✅ Aprobar'}
+        confirmText={confirm.type === 'danger' ? 'Rechazar' : 'Aprobar'}
         onConfirm={() => confirm.action && confirm.action()}
         onCancel={() => setConfirm({ ...confirm, show: false })}
       />
       <div className="gestion-container">
         <div className="gestion-header">
-          <h2>📋 Gestión de Solicitudes</h2>
+          <h2><ClipboardList className="inline-block mr-2" size={24} /> Gestión de Solicitudes</h2>
         </div>
 
         <div className="filtros">
@@ -177,14 +178,14 @@ const GestionSolicitudes = () => {
                             className="btn btn-sm btn-success"
                             title="Aprobar"
                           >
-                            ✓
+                            <Check size={16} />
                           </button>
                           <button
                             onClick={() => cambiarEstado(sol.id, 'rechazada')}
                             className="btn btn-sm btn-error"
                             title="Rechazar"
                           >
-                            ✗
+                            <X size={16} />
                           </button>
                         </div>
                       )}

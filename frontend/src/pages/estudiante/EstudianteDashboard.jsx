@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { FileText, ClipboardList, Mail, User } from 'lucide-react';
 import Layout from '../../components/Layout';
 import api from '../../services/api';
 import './EstudianteDashboard.css';
@@ -95,17 +96,17 @@ const EstudianteDashboard = () => {
             <h2 className="card-title">Acciones Rápidas</h2>
           </div>
           <div className="quick-actions">
-            <Link to="/estudiante/nueva-solicitud" className="btn btn-primary">
-              📝 Nueva Solicitud
+            <Link to="/estudiante/nueva-solicitud" className="btn btn-primary flex items-center justify-center gap-2">
+              <FileText className="w-5 h-5" /> Nueva Solicitud
             </Link>
-            <Link to="/estudiante/solicitudes" className="btn btn-secondary">
-              📋 Ver Solicitudes
+            <Link to="/estudiante/solicitudes" className="btn btn-secondary flex items-center justify-center gap-2">
+              <ClipboardList className="w-5 h-5" /> Ver Solicitudes
             </Link>
-            <Link to="/estudiante/mensajes" className="btn btn-outline">
-              ✉️ Mensajes
+            <Link to="/estudiante/mensajes" className="btn btn-outline flex items-center justify-center gap-2">
+              <Mail className="w-5 h-5" /> Mensajes
             </Link>
-            <Link to="/estudiante/perfil" className="btn btn-outline">
-              👤 Mi Perfil
+            <Link to="/estudiante/perfil" className="btn btn-outline flex items-center justify-center gap-2">
+              <User className="w-5 h-5" /> Mi Perfil
             </Link>
           </div>
         </div>
@@ -134,7 +135,7 @@ const EstudianteDashboard = () => {
                     <span className={`badge ${getEstadoBadge(sol.estado)}`}>
                       {getEstadoTexto(sol.estado)}
                     </span>
-                    <Link 
+                    <Link
                       to="/estudiante/solicitudes"
                       className="btn btn-sm btn-secondary"
                     >
@@ -158,7 +159,7 @@ const EstudianteDashboard = () => {
             ) : (
               mensajes.map((msg) => (
                 <div key={msg.id} className="mensaje-item">
-                  <div className="mensaje-icon">✉️</div>
+                  <div className="mensaje-icon"><Mail className="w-5 h-5" /></div>
                   <div className="mensaje-content">
                     <h4>{msg.asunto}</h4>
                     <p className="text-sm text-gray">{msg.contenido.substring(0, 100)}...</p>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { KeyRound, GraduationCap, Users, CheckCircle, XCircle, RefreshCw, ClipboardCopy, Info } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -42,14 +43,14 @@ const SolicitudesResetPassword = () => {
       action: async () => {
         try {
           const res = await api.post(`/subdecano/generar-password-reset/${solicitudId}`);
-          
+
           setPasswordData({
             email: res.data.email,
             password: res.data.password_temporal,
             instrucciones: res.data.instrucciones
           });
           setShowPasswordModal(true);
-          
+
           // Recargar lista
           setTimeout(() => cargarSolicitudes(), 1000);
         } catch (error) {
@@ -108,7 +109,7 @@ const SolicitudesResetPassword = () => {
 
       <div className="gestion-container">
         <div className="gestion-header">
-          <h2>🔑 Solicitudes de Reset de Contraseña</h2>
+          <h2><KeyRound className="inline-block mr-2" size={24} /> Solicitudes de Reset de Contraseña</h2>
           <div className="badge badge-info">
             {solicitudes.filter(s => s.estado === 'pendiente').length} Pendientes
           </div>
@@ -129,7 +130,9 @@ const SolicitudesResetPassword = () => {
               {solicitudes.length === 0 ? (
                 <tr>
                   <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
-                    ℹ️ No hay solicitudes de reset
+                    <div className="flex items-center justify-center gap-2">
+                      <Info size={20} /> No hay solicitudes de reset
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -141,21 +144,20 @@ const SolicitudesResetPassword = () => {
                     <td>{solicitud.email}</td>
                     <td>
                       <span className="badge badge-info">
-                        {solicitud.rol === 'estudiante' && '👨‍🎓'}
-                        {solicitud.rol === 'docente' && '👨‍🏫'}
+                        {solicitud.rol === 'estudiante' && <Users size={16} className="inline mr-1" />}
+                        {solicitud.rol === 'docente' && <GraduationCap size={16} className="inline mr-1" />}
                         {' '}
                         {solicitud.rol.charAt(0).toUpperCase() + solicitud.rol.slice(1)}
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${
-                        solicitud.estado === 'pendiente' ? 'badge-warning' :
+                      <span className={`badge ${solicitud.estado === 'pendiente' ? 'badge-warning' :
                         solicitud.estado === 'completado' ? 'badge-success' :
-                        'badge-danger'
-                      }`}>
+                          'badge-danger'
+                        }`}>
                         {solicitud.estado === 'pendiente' && '⏳ Pendiente'}
-                        {solicitud.estado === 'completado' && '✅ Completado'}
-                        {solicitud.estado === 'rechazado' && '❌ Rechazado'}
+                        {solicitud.estado === 'completado' && <><CheckCircle size={14} className="inline mr-1" /> Completado</>}
+                        {solicitud.estado === 'rechazado' && <><XCircle size={14} className="inline mr-1" /> Rechazado</>}
                       </span>
                     </td>
                     <td>
@@ -174,7 +176,7 @@ const SolicitudesResetPassword = () => {
                           className="btn btn-sm btn-primary"
                           title="Generar contraseña temporal"
                         >
-                          🔄 Generar
+                          <RefreshCw size={16} /> Generar
                         </button>
                       ) : (
                         <span style={{ color: '#999' }}>Completado</span>
@@ -209,8 +211,10 @@ const SolicitudesResetPassword = () => {
               boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
               textAlign: 'center'
             }}>
-              <h2 style={{ color: '#333', marginTop: 0 }}>✅ Contraseña Generada</h2>
-              
+              <h2 style={{ color: '#333', marginTop: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <CheckCircle size={24} className="text-success" /> Contraseña Generada
+              </h2>
+
               <div style={{
                 background: '#f0f7ff',
                 padding: '15px',
@@ -263,7 +267,7 @@ const SolicitudesResetPassword = () => {
                   className="btn btn-primary"
                   style={{ flex: 1 }}
                 >
-                  📋 Copiar
+                  <ClipboardCopy size={18} /> Copiar
                 </button>
                 <button
                   onClick={() => setShowPasswordModal(false)}

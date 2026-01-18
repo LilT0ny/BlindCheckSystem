@@ -17,40 +17,48 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # 1. Navegar al directorio del proyecto
+            # 1. Navegar al directorio y asegurar permisos
             cd ~/BlindCheck || exit 1
-            
-            # 2. Detener servicios que bloquean puertos 80 y 443
-            echo "Stopping local web servers..."
+            sudo chown -R $USER:$USER ~/BlindCheck
+
+            # 2. Detener servicios externos que chocan con puertos 80/443
+            echo "Stopping conflicting services..."
             sudo systemctl stop nginx 2>/dev/null || true
             sudo systemctl stop apache2 2>/dev/null || true
 
-            # 3. Actualizar código desde GitHub
-            echo "Updating code from main..."
+            # 3. Actualizar código (Limpia cambios locales accidentales)
+            echo "Syncing with GitHub..."
             git fetch --all
             git reset --hard origin/main
 
-            # 4. Limpieza de Docker (Mantenimiento)
-            echo "Cleaning up old Docker resources..."
+            # 4. Limpieza Profunda de Docker (Evita que el disco se llene)
+            echo "Cleaning up Docker environment..."
             docker compose down --remove-orphans
-            # Solo borramos imágenes huérfanas para no saturar el disco
-            docker image prune -f 
+            # Borra imágenes viejas de más de 24h para liberar espacio
+            docker image prune -a -f --filter "until=24h"
 
-            # 5. Gestión de Certificados SSL
-            # Verificamos si existe el directorio de los certificados
+            # 5. Gestión de Certificados SSL (Automático)
             if [ ! -d "./certbot/conf/live/blindcheck.space" ]; then
-              echo "⚠️ SSL: Certificados no encontrados. Iniciando script de inicialización..."
+              echo "⚠️ SSL: No se detectaron certificados. Iniciando configuración inicial..."
               chmod +x init-letsencrypt.sh
               ./init-letsencrypt.sh
             else
-              echo "✅ SSL: Certificados encontrados y válidos."
+              echo "✅ SSL: Certificados detectados."
             fi
 
-            # 6. Despliegue de la Aplicación
-            echo "🚀 Levantando servicios con Docker Compose..."
+            # 6. Despliegue y Re-construcción
+            echo "🚀 Lanzando contenedores..."
             docker compose up -d --build
 
-            # 7. Verificación de estado
-            echo "Final check..."
-            sleep 5
+            # 7. Verificación de salud y Logs de error
+            echo "Final verification..."
+            sleep 10
             docker compose ps
+            
+            # Si el frontend no sube, nos muestra el error en los logs de GitHub
+            if [ $(docker inspect -f '{{.State.Running}}' blindcheck-frontend) != "true" ]; then
+              echo "❌ ERROR: El frontend falló al iniciar. Mostrando logs:"
+              docker logs blindcheck-frontend
+              exit 1
+            fi
+            echo "✅ Despliegue completado con éxito."

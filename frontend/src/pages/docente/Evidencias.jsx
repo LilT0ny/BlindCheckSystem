@@ -52,7 +52,7 @@ const Evidencias = () => {
       setEstudiantes(estudiantesRes.data);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      setAlert({ show: true, type: 'error', title: '❌ Error', message: 'Error al cargar evidencias' });
+      setAlert({ show: true, type: 'error', title: 'Error', message: 'Error al cargar evidencias' });
     } finally {
       setLoading(false);
     }
@@ -78,11 +78,11 @@ const Evidencias = () => {
     e.preventDefault();
 
     if (!formData.archivo) {
-      setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'Debes seleccionar una imagen' });
+      setAlert({ show: true, type: 'warning', title: 'Aviso', message: 'Debes seleccionar una imagen' });
       return;
     }
     if (!formData.estudiante_id) {
-      setAlert({ show: true, type: 'warning', title: '⚠️ Aviso', message: 'Debes seleccionar un estudiante' });
+      setAlert({ show: true, type: 'warning', title: 'Aviso', message: 'Debes seleccionar un estudiante' });
       return;
     }
     if (!formData.materia_id) {
@@ -229,7 +229,9 @@ const Evidencias = () => {
       <div className="evidencias-container">
         <div className="evidencias-header">
           <div>
-            <h2>📸 Mis Evidencias</h2>
+            <h2 className="flex items-center gap-2">
+              <Camera className="w-6 h-6" /> Mis Evidencias
+            </h2>
             <p className="text-gray">Fotos de evaluaciones con anonimato garantizado</p>
           </div>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -263,8 +265,14 @@ const Evidencias = () => {
                     }}
                   />
                   <div className="evidencia-overlay">
-                    <span className="hash-badge">🔒 {ev.archivo_nombre_hash}</span>
-                    {ev.recortada && <span className="recortada-badge">✓ Recortada</span>}
+                    <span className="hash-badge flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> {ev.archivo_nombre_hash}
+                    </span>
+                    {ev.recortada && (
+                      <span className="recortada-badge flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Recortada
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -387,7 +395,6 @@ const Evidencias = () => {
               {step === 2 && tempData && (
                 <div className="crop-step">
                   <ImagePixelator imageUrl={buildFileUrl(tempData.preview_url)} onAreaSelected={handleAreaSelected} />
-
                   <div
                     className="modal-actions"
                     style={{
@@ -452,13 +459,14 @@ const Evidencias = () => {
           <div className="modal-overlay" onClick={handleCerrarDetalle}>
             <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>📸 Detalle de Evidencia</h2>
-                <button className="modal-close" onClick={handleCerrarDetalle}>✕</button>
+                <h2 className="flex items-center gap-2">
+                  <Camera className="w-6 h-6" /> Detalle de Evidencia
+                </h2>
+                <button className="modal-close" onClick={handleCerrarDetalle}><X className="w-5 h-5" /></button>
               </div>
 
               <div style={{ padding: '20px' }}>
                 {/* ... tu bloque de info igual ... */}
-
                 <div
                   style={{
                     border: '2px solid #e2e8f0',

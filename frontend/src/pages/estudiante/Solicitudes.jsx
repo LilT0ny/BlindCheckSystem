@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ClipboardList, Plus, X, ArrowRight } from 'lucide-react';
 import Layout from '../../components/Layout';
 import api from '../../services/api';
 import './Solicitudes.css';
@@ -73,9 +74,11 @@ const Solicitudes = () => {
     <Layout title="Mis Solicitudes">
       <div className="solicitudes-container">
         <div className="solicitudes-header">
-          <h2>📋 Mis Solicitudes de Recalificación</h2>
-          <Link to="/estudiante/nueva-solicitud" className="btn btn-primary">
-            ➕ Nueva Solicitud
+          <h2 className="flex items-center gap-2">
+            <ClipboardList className="w-6 h-6" /> Mis Solicitudes de Recalificación
+          </h2>
+          <Link to="/estudiante/nueva-solicitud" className="btn btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nueva Solicitud
           </Link>
         </div>
 
@@ -135,9 +138,9 @@ const Solicitudes = () => {
                 <div className="solicitud-card-footer">
                   <button
                     onClick={() => verDetalles(sol)}
-                    className="btn btn-outline btn-sm"
+                    className="btn btn-outline btn-sm flex items-center gap-1"
                   >
-                    Ver Detalles →
+                    Ver Detalles <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -151,11 +154,11 @@ const Solicitudes = () => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Detalles de la Solicitud</h2>
-                <button 
+                <button
                   className="modal-close"
                   onClick={() => setShowModal(false)}
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 

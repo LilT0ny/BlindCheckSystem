@@ -17,13 +17,8 @@ services:
     container_name: blindcheck-backend
     depends_on:
       - mongo
-    environment:
-      - MONGODB_URL=mongodb://mongo:27017
-      - DATABASE_NAME=BlindCheck
-      - SECRET_KEY=${SECRET_KEY:-a8f5f167f44f4964e6c998dee827110c}
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-b9e4aa6b7c6d4f32a1b8e5c9d7f3e4a2}
+    env_file:
+      - .env
 
   frontend:
     build:

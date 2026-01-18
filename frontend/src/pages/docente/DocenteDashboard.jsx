@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { BookOpen, Paperclip, Pencil, User, CheckCircle, Clock } from 'lucide-react';
 import Layout from '../../components/Layout';
 import api from '../../services/api';
 
@@ -67,16 +68,16 @@ const DocenteDashboard = () => {
           </div>
           <div className="quick-actions">
             <Link to="/docente/materias" className="btn btn-primary">
-              📚 Mis Materias
+              <BookOpen className="w-4 h-4" /> Mis Materias
             </Link>
             <Link to="/docente/evidencias" className="btn btn-secondary">
-              📎 Gestionar Evidencias
+              <Paperclip className="w-4 h-4" /> Gestionar Evidencias
             </Link>
             <Link to="/docente/recalificaciones" className="btn btn-secondary">
-              ✏️ Recalificaciones
+              <Pencil className="w-4 h-4" /> Recalificaciones
             </Link>
             <Link to="/docente/perfil" className="btn btn-outline">
-              👤 Mi Perfil
+              <User className="w-4 h-4" /> Mi Perfil
             </Link>
           </div>
         </div>
@@ -93,7 +94,7 @@ const DocenteDashboard = () => {
               materias.map((materia) => (
                 <div key={materia.id} className="card">
                   <h3>{materia.nombre}</h3>
-                  <p className="text-gray">Código: {materia.codigo}</p>
+                  <p className="text-gray">Código: <span className="font-mono">{materia.codigo}</span></p>
                   <p className="text-sm text-gray">Grupos: {materia.grupos.join(', ')}</p>
                   <p className="text-sm">Evidencias: {materia.evidencias_subidas}</p>
                 </div>

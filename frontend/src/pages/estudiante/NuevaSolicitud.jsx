@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FileText, BookOpen } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import api from '../../services/api';
@@ -11,7 +12,7 @@ const NuevaSolicitud = () => {
   const [opcionesSolicitud, setOpcionesSolicitud] = useState([]);
   const [opcionesSeleccionada, setOpcionesSeleccionada] = useState(null);
   const [alert, setAlert] = useState({ show: false, type: 'info', title: '', message: '' });
-  
+
   const [formData, setFormData] = useState({
     materia_id: '',
     docente_id: '',
@@ -31,11 +32,11 @@ const NuevaSolicitud = () => {
       const res = await api.get('/estudiante/opciones-solicitud');
       setOpcionesSolicitud(res.data);
       setLoading(false);
-      
+
       if (res.data.length === 0) {
-        console.log('⚠️ No hay evidencias disponibles para solicitar recalificaciones');
+        console.log('No hay evidencias disponibles para solicitar recalificaciones');
       } else {
-        console.log(`✅ ${res.data.length} opciones de solicitud disponibles`);
+        console.log(`${res.data.length} opciones de solicitud disponibles`);
       }
     } catch (error) {
       console.error('Error al cargar opciones:', error);
@@ -46,7 +47,7 @@ const NuevaSolicitud = () => {
   const handleOpcionChange = (e) => {
     const index = parseInt(e.target.value);
     const opcion = opcionesSolicitud[index];
-    
+
     if (opcion) {
       setOpcionesSeleccionada(opcion);
       setFormData({
@@ -77,7 +78,7 @@ const NuevaSolicitud = () => {
       setAlert({
         show: true,
         type: 'success',
-        title: '✅ Éxito',
+        title: 'Éxito',
         message: 'Solicitud creada exitosamente'
       });
       setTimeout(() => navigate('/estudiante/solicitudes'), 1500);
@@ -86,7 +87,7 @@ const NuevaSolicitud = () => {
       setAlert({
         show: true,
         type: 'error',
-        title: '❌ Error',
+        title: 'Error',
         message: error.response?.data?.detail || 'Error desconocido al crear solicitud'
       });
     } finally {
@@ -109,11 +110,16 @@ const NuevaSolicitud = () => {
       <Layout title="Nueva Solicitud de Recalificación">
         <div className="card max-w-2xl mx-auto">
           <div className="card-header">
-            <h2 className="card-title">📝 Nueva Solicitud</h2>
+            <h2 className="card-title flex items-center gap-2">
+              <FileText className="w-6 h-6" /> Nueva Solicitud
+            </h2>
           </div>
-          <div className="alert alert-info">
-            <p>📚 No hay evidencias disponibles en el sistema para solicitar recalificaciones.</p>
-            <p>Por favor, espera a que los docentes suban las evidencias de los aportes.</p>
+          <div className="alert alert-info flex items-start gap-2">
+            <BookOpen className="w-5 h-5 mt-1" />
+            <div>
+              <p>No hay evidencias disponibles en el sistema para solicitar recalificaciones.</p>
+              <p>Por favor, espera a que los docentes suban las evidencias de los aportes.</p>
+            </div>
           </div>
           <div className="form-actions" style={{ justifyContent: 'flex-start' }}>
             <button
@@ -130,7 +136,7 @@ const NuevaSolicitud = () => {
 
   return (
     <Layout title="Nueva Solicitud de Recalificación">
-      <AlertModal 
+      <AlertModal
         show={alert.show}
         type={alert.type}
         title={alert.title}
@@ -139,7 +145,9 @@ const NuevaSolicitud = () => {
       />
       <div className="card max-w-2xl mx-auto">
         <div className="card-header">
-          <h2 className="card-title">📝 Nueva Solicitud</h2>
+          <h2 className="card-title flex items-center gap-2">
+            <FileText className="w-6 h-6" /> Nueva Solicitud
+          </h2>
         </div>
         <form onSubmit={handleSubmit} className="form">
           {/* Selector de opción precargada */}

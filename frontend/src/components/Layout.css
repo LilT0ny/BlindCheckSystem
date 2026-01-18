@@ -2,11 +2,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-primary);
 }
 
 .layout-header {
-  background-color: var(--color-white);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   padding: 1rem 0;
   position: sticky;
   top: 0;
@@ -28,12 +29,13 @@
 
 .header-title {
   font-size: 1.5rem;
-  color: var(--color-primary);
+  color: var(--text-primary);
   font-weight: 700;
+  margin: 0;
 }
 
 .header-subtitle {
-  color: var(--color-gray);
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
@@ -52,13 +54,13 @@
 
 .user-role {
   font-weight: 600;
-  color: var(--color-secondary);
+  color: var(--color-primary);
   font-size: 0.9rem;
 }
 
 .user-email {
   font-size: 0.85rem;
-  color: var(--color-gray);
+  color: var(--text-secondary);
 }
 
 .btn-sm {
@@ -72,16 +74,17 @@
 }
 
 .layout-footer {
-  background-color: var(--color-gray-dark);
-  color: var(--color-white);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
   padding: 1.5rem 0;
   text-align: center;
   margin-top: auto;
+  border-top: 1px solid var(--border-color);
 }
 
 .layout-footer p {
-  font-size: 0.9rem;
-  opacity: 0.8;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
