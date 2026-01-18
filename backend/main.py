@@ -8,7 +8,8 @@ from seed_db import seed_data
 app = FastAPI(
     title="Sistema de Recalificación Anónima",
     description="API para gestión de recalificaciones académicas con anonimización",
-    version="1.0.0"
+    version="1.0.0",
+    root_path="/api"
 )
 
 @app.on_event("startup")
@@ -18,12 +19,7 @@ async def startup_event():
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=[
-    #     "http://localhost:3000",
-    #     "http://localhost:5173",
-    #     "https://visual-blindcheck-hudsc3d2d4degwau.eastus-01.azurewebsites.net"
-    # ],
-    allow_origin_regex=".*",  # Permitir cualquier origen (útil para VPS/IPs dinámicas)
+    allow_origins=["https://blindcheck.space", "http://blindcheck.space"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
