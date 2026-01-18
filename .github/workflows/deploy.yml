@@ -17,37 +17,40 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # 1. Asegurar que estamos en el directorio correcto
-            cd BlindCheck || exit 1
+            # 1. Navegar al directorio del proyecto
+            cd ~/BlindCheck || exit 1
             
-            # 2. Detener servicios "intrusos" que puedan robar el puerto 80
-            # Usamos 'sudo' y ignoramos errores (|| true) por si no están instalados
-            sudo systemctl stop nginx || true
-            sudo systemctl stop apache2 || true
+            # 2. Detener servicios que bloquean puertos 80 y 443
+            echo "Stopping local web servers..."
+            sudo systemctl stop nginx 2>/dev/null || true
+            sudo systemctl stop apache2 2>/dev/null || true
 
-            # 3. Actualizar el código (Forzado para evitar conflictos)
+            # 3. Actualizar código desde GitHub
+            echo "Updating code from main..."
             git fetch --all
             git reset --hard origin/main
 
-            # 4. Limpieza Profunda ("Nuclear")
-            # Detener contenedores del proyecto
-            docker compose down
-            # Borrar contenedores sueltos y liberar espacio (equivalente seguro a su limpieza)
-            docker container prune -f
-            docker image prune -a -f 
+            # 4. Limpieza de Docker (Mantenimiento)
+            echo "Cleaning up old Docker resources..."
+            docker compose down --remove-orphans
+            # Solo borramos imágenes huérfanas para no saturar el disco
+            docker image prune -f 
 
-            # 5. Generación Condicional de Certificados (¡CRÍTICO PARA EVITAR BLOQUEO!)
-            # Solo corremos el script de Let's Encrypt si NO existen los certificados.
-            # Si lo corremos cada vez, Let's Encrypt bloqueará el dominio por "Rate Limit".
+            # 5. Gestión de Certificados SSL
+            # Verificamos si existe el directorio de los certificados
             if [ ! -d "./certbot/conf/live/blindcheck.space" ]; then
-              echo "⚠️ No se encontraron certificados. Ejecutando script de inicialización..."
+              echo "⚠️ SSL: Certificados no encontrados. Iniciando script de inicialización..."
               chmod +x init-letsencrypt.sh
               ./init-letsencrypt.sh
             else
-              echo "✅ Certificados encontrados. Iniciando sistema normalmente..."
-              # Levantar servicios en segundo plano con persistencia
-              docker compose up -d --build
+              echo "✅ SSL: Certificados encontrados y válidos."
             fi
 
-            # 6. Verificación final
+            # 6. Despliegue de la Aplicación
+            echo "🚀 Levantando servicios con Docker Compose..."
+            docker compose up -d --build
+
+            # 7. Verificación de estado
+            echo "Final check..."
+            sleep 5
             docker compose ps
