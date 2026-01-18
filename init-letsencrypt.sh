@@ -59,7 +59,8 @@ $COMPOSE run --rm --entrypoint "certbot certonly --webroot -w /var/www/certbot \
     --agree-tos \
     --force-renewal \
     --non-interactive \
-    --break-my-certs" certbot  # <--- AÑADE --break-my-certs aquí
+    --break-my-certs \
+    --cert-name blindcheck.space" certbot
 
 echo "### Recargando Nginx..."
 $COMPOSE exec frontend nginx -s reload
