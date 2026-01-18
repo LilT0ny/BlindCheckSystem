@@ -1,15 +1,16 @@
 import axios from 'axios';
 
-// Variable en memoria por pestaña (cada pestaña tiene su propia instancia de JavaScript)
-let authToken = null;
-
+// SessionStorage es verdaderamente por pestaña
 export const setAuthToken = (token) => {
-  authToken = token;
-  console.log(`[api.js] Token actualizado:`, token ? '✅ SET' : '❌ CLEARED');
+  if (token) {
+    sessionStorage.setItem('auth_token_tab', token);
+  } else {
+    sessionStorage.removeItem('auth_token_tab');
+  }
 };
 
 export const getAuthToken = () => {
-  return authToken;
+  return sessionStorage.getItem('auth_token_tab');
 };
 
 const api = axios.create({
@@ -23,8 +24,9 @@ const api = axios.create({
 // Interceptor para agregar token al header
 api.interceptors.request.use(
   (config) => {
-    if (authToken) {
-      config.headers.Authorization = `Bearer ${authToken}`;
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -40,8 +42,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.log('❌ [api.js] 401 - Token inválido o expirado');
       setAuthToken(null);
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+      // Redirigir SOLO si estamos en una ruta protegida
+      if (!window.location.pathname.includes('/login') && !window.location.pathname === '/') {
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
       }
     }
     return Promise.reject(error);
