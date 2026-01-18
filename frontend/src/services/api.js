@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-// Variable para almacenar el token en memoria (actualizado por authStore)
+// Variable en memoria por pestaña (cada pestaña tiene su propia instancia de JavaScript)
 let authToken = null;
 
 export const setAuthToken = (token) => {
   authToken = token;
+  console.log(`[api.js] Token actualizado:`, token ? '✅ SET' : '❌ CLEARED');
 };
 
 export const getAuthToken = () => {
@@ -16,10 +17,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true  // Incluir cookies automáticamente
+  withCredentials: true
 });
 
-// Interceptor para agregar token en memoria al header
+// Interceptor para agregar token al header
 api.interceptors.request.use(
   (config) => {
     if (authToken) {
@@ -37,9 +38,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      window.location.href = '/login';
+      console.log('❌ [api.js] 401 - Token inválido o expirado');
+      setAuthToken(null);
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
