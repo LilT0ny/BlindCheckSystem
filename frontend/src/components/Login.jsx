@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import CambiarPassword from './CambiarPassword';
+import RecuperarPassword from './RecuperarPassword';
 import './Login.css';
 
 const Login = () => {
@@ -17,7 +18,9 @@ const Login = () => {
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showCambiarPassword, setShowCambiarPassword] = useState(false);
+  const [showRecuperarPassword, setShowRecuperarPassword] = useState(false);
   const [loginData, setLoginData] = useState(null);
 
   const handleChange = (e) => {
@@ -116,6 +119,13 @@ const Login = () => {
       {showCambiarPassword && (
         <CambiarPassword onPasswordChanged={handlePasswordChanged} />
       )}
+
+      {showRecuperarPassword && (
+        <RecuperarPassword
+          onClose={() => setShowRecuperarPassword(false)}
+          onSuccess={() => setShowRecuperarPassword(false)}
+        />
+      )}
       
       <div className="login-container">
         <div className="login-card">
@@ -163,16 +173,26 @@ const Login = () => {
 
           <div className="form-group">
             <label htmlFor="password" className="form-label">Contraseña</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="••••••••"
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </div>
 
           <button 
@@ -189,6 +209,16 @@ const Login = () => {
               'Iniciar Sesión'
             )}
           </button>
+
+          <div className="login-links">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setShowRecuperarPassword(true)}
+            >
+              🔑 ¿Olvidó su contraseña?
+            </button>
+          </div>
         </form>
       </div>
     </div>

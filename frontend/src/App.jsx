@@ -13,6 +13,7 @@ import GestionSolicitudes from './pages/subdecano/GestionSolicitudes';
 import GestionDocentes from './pages/subdecano/GestionDocentes';
 import GestionEstudiantes from './pages/subdecano/GestionEstudiantes';
 import GestionMaterias from './pages/subdecano/GestionMaterias';
+import SolicitudesResetPassword from './pages/subdecano/SolicitudesResetPassword';
 import { useAuthStore } from './store/authStore';
 
 function App() {
@@ -133,6 +134,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['subdecano']}>
               <GestionMaterias />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/subdecano/reset-password" 
+          element={
+            <ProtectedRoute allowedRoles={['subdecano']}>
+              <SolicitudesResetPassword />
             </ProtectedRoute>
           } 
         />

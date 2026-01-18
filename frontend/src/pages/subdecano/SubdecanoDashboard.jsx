@@ -87,6 +87,9 @@ const SubdecanoDashboard = () => {
             <Link to="/subdecano/solicitudes" className="btn btn-primary">
               📋 Ver Solicitudes
             </Link>
+            <Link to="/subdecano/reset-password" className="btn btn-warning">
+              🔑 Reset de Contraseña
+            </Link>
             <Link to="/subdecano/docentes" className="btn btn-secondary">
               👨‍🏫 Gestionar Docentes
             </Link>
