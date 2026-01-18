@@ -75,7 +75,7 @@ $COMPOSE run --rm --entrypoint "\
     $staging_arg \
     $email_arg \
     $domain_args \
-    --rss-key-size $rsa_key_size \
+    --rsa-key-size $rsa_key_size \
     --agree-tos \
     --force-renewal" certbot
 echo
