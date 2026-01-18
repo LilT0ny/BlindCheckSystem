@@ -61,4 +61,12 @@ jobs:
               docker logs blindcheck-frontend
               exit 1
             fi
+
+            # Verificación específica para el backend
+            if [ $(docker inspect -f '{{.State.Running}}' blindcheck-backend) != "true" ]; then
+              echo "❌ ERROR: El backend falló al iniciar. Mostrando logs:"
+              docker logs blindcheck-backend
+              exit 1
+            fi
+            
             echo "✅ Despliegue completado con éxito."
