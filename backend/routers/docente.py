@@ -459,7 +459,23 @@ async def listar_evidencias(current_user: Dict = Depends(get_current_user)):
     
     resultado = []
     for ev in evidencias:
-        materia = await materias_collection.find_one({"_id": ev["materia_id"]})
+        # Buscar materia - puede ser string o ObjectId
+        materia_id = ev["materia_id"]
+        print(f"🔍 DEBUG EVIDENCIAS: Buscando materia {materia_id} (tipo: {type(materia_id)})")
+        
+        materia = await materias_collection.find_one({"_id": materia_id})
+        
+        # Si no se encuentra, intentar con el otro tipo
+        if not materia and isinstance(materia_id, str):
+            try:
+                materia = await materias_collection.find_one({"_id": ObjectId(materia_id)})
+            except:
+                pass
+        
+        if not materia and isinstance(materia_id, ObjectId):
+            materia = await materias_collection.find_one({"_id": str(materia_id)})
+        
+        print(f"   {'✅' if materia else '❌'} Materia: {materia['nombre'] if materia else 'NO ENCONTRADA'}")
         
         resultado.append({
             "id": str(ev["_id"]),
@@ -497,7 +513,23 @@ async def listar_recalificaciones_asignadas(current_user: Dict = Depends(get_cur
     
     resultado = []
     for sol in solicitudes:
-        materia = await materias_collection.find_one({"_id": sol["materia_id"]})
+        # Buscar materia - puede ser string o ObjectId
+        materia_id = sol["materia_id"]
+        print(f"🔍 DEBUG RECALIFICACION: Buscando materia {materia_id} (tipo: {type(materia_id)})")
+        
+        materia = await materias_collection.find_one({"_id": materia_id})
+        
+        # Si no se encuentra, intentar con el otro tipo
+        if not materia and isinstance(materia_id, str):
+            try:
+                materia = await materias_collection.find_one({"_id": ObjectId(materia_id)})
+            except:
+                pass
+        
+        if not materia and isinstance(materia_id, ObjectId):
+            materia = await materias_collection.find_one({"_id": str(materia_id)})
+        
+        print(f"   {'✅' if materia else '❌'} Materia: {materia['nombre'] if materia else 'NO ENCONTRADA'}")
         
         resultado.append(SolicitudResponse(
             id=str(sol["_id"]),
