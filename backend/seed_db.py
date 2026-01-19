@@ -21,7 +21,7 @@ async def seed_data():
     # o usamos uno específico si se desea. En el screenshot tiene un ObjectId.
     subdecano_data = {
         "email": "admin@blindcheck.edu",
-        "password": pwd_context.hash("admin@blindcheck.edu"),
+        "password": pwd_context.hash("Admin2026!"),
         "nombre": "Administrador",
         "apellido": "BlindCheck",
         "cedula": "1700000001",
