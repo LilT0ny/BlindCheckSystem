@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Paperclip, Edit, Check, CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { ClipboardList, Paperclip, Edit, Check, CheckCircle, X } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import api from '../../services/api';

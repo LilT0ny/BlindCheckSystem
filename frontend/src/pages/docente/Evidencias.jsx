@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Plus, Image, Lock, Check, Eye, X, Trash, ArrowRight, Search, Info, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Camera, Check, Search, X } from 'lucide-react';
 import Layout from '../../components/Layout';
 import AlertModal from '../../components/AlertModal';
 import ImagePixelator from '../../components/ImagePixelator';
@@ -265,16 +265,12 @@ const Evidencias = () => {
         ) : (
           <div className="evidencias-grid">
             {evidencias.map((ev) => (
-              <div
+              <button
                 key={ev.id}
                 className="evidencia-card"
                 onClick={() => handleVerDetalle(ev)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') handleVerDetalle(ev);
-                }}
-                role="button"
-                tabIndex={0}
-                style={{ cursor: 'pointer' }}
+                type="button"
+                style={{ cursor: 'pointer', width: '100%', padding: 0, border: 'none', background: 'transparent', textAlign: 'left' }}
               >
                 <div className="evidencia-image">
                   <img
@@ -310,11 +306,11 @@ const Evidencias = () => {
                   <p className="text-sm text-gray">{ev.descripcion}</p>
                   <p className="text-xs text-gray">{new Date(ev.fecha_subida).toLocaleString('es-ES')}</p>
 
-                  <button className="btn btn-secondary btn-sm" style={{ marginTop: '10px', width: '100%' }}>
+                  <span className="btn btn-secondary btn-sm" style={{ marginTop: '10px', width: '100%', display: 'block', textAlign: 'center' }}>
                     👁️ Ver Detalle
-                  </button>
+                  </span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -324,14 +320,8 @@ const Evidencias = () => {
           <div
             className="modal-overlay"
             onClick={() => !uploading && handleCancelar()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                if (!uploading) handleCancelar();
-              }
-            }}
             aria-label="Cerrar modal"
+            style={{ border: 'none', background: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', position: 'fixed', top: 0, left: 0, cursor: 'default', zIndex: 50 }}
           >
             <div
               className="modal-content modal-large"
@@ -528,12 +518,8 @@ const Evidencias = () => {
           <div
             className="modal-overlay"
             onClick={handleCerrarDetalle}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') handleCerrarDetalle();
-            }}
             aria-label="Cerrar detalle"
+            style={{ border: 'none', background: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', position: 'fixed', top: 0, left: 0, cursor: 'default', zIndex: 50 }}
           >
             <div
               className="modal-content modal-large"
