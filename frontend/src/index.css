@@ -5,34 +5,73 @@
 
   /* Fondos */
   --bg-primary: #FAFAFA;
-  /* Fondo principal gris suave */
+  /* Fondo Principal */
   --bg-secondary: #FFFFFF;
-  /* Blanco puro para tarjetas */
+  /* Fondo Secundario (Tarjetas) */
 
   /* Texto */
   --text-primary: #1A1A1A;
-  /* Negro casi puro */
+  /* Texto Principal */
   --text-secondary: #6B6B6B;
-  /* Gris medio */
+  /* Texto Secundario */
 
   /* Acciones */
   --color-primary: #2563EB;
-  /* Azul confiable */
+  /* Primario */
   --color-primary-hover: #1D4ED8;
+  /* Primario Hover */
   --color-success: #10B981;
+  /* Éxito */
   --color-warning: #F59E0B;
+  /* Advertencia */
   --color-error: #EF4444;
+  /* Error */
 
   /* Neutros */
   --border-color: #E5E7EB;
+  /* Bordes */
   --separator-color: #D1D5DB;
+  /* Separadores */
   --disabled-color: #9CA3AF;
+  /* Deshabilitado */
 
   /* Globales */
   --border-radius: 0.5rem;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Standard Container */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Layout Utility for "2/4 width centered" */
+.container-centered {
+  width: 100%;
+  max-width: 50%;
+  /* 2/4 de la pantalla aproximadamente */
+  margin: 0 auto;
+  /* Centrado */
+  padding: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .container-centered {
+    max-width: 75%;
+    /* Un poco más ancho en tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .container-centered {
+    max-width: 95%;
+    /* Casi full width en móviles */
+  }
 }
 
 * {
