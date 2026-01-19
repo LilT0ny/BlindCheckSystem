@@ -72,14 +72,30 @@ async def crear_solicitud(
     if current_user["role"] != "estudiante":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
     
-    # Verificar que la materia existe
-    materia = await materias_collection.find_one({"_id": solicitud.materia_id})
+    # Verificar que la materia existe (convertir a ObjectId)
+    try:
+        materia_oid = ObjectId(solicitud.materia_id)
+        materia = await materias_collection.find_one({"_id": materia_oid})
+    except:
+        materia = await materias_collection.find_one({"_id": solicitud.materia_id})
+    
     if not materia:
+        # Debug para ver por qué falla
+        print(f"❌ Materia no encontrada: {solicitud.materia_id}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Materia no encontrada")
     
     # Verificar que el docente existe
+    # Los docentes pueden tener ID string (DOC123) o ObjectId
     docente = await docentes_collection.find_one({"_id": solicitud.docente_id})
     if not docente:
+        # Intentar con ObjectId por si acaso
+        try:
+             docente = await docentes_collection.find_one({"_id": ObjectId(solicitud.docente_id)})
+        except:
+             pass
+             
+    if not docente:
+        print(f"❌ Docente no encontrado: {solicitud.docente_id}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Docente no encontrado")
     
     # ✅ VALIDACIÓN CRÍTICA: Verificar que exista una evidencia subida para esta combinación
