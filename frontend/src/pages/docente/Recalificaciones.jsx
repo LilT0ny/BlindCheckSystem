@@ -42,9 +42,20 @@ const Recalificaciones = () => {
     try {
       const response = await api.get(`/docente/recalificaciones/${solicitud.id}/evidencia`);
       if (response.data && response.data.archivo_url) {
-        // archivo_url ya viene con / al inicio, no agregar otro /
+        let archivoUrl = response.data.archivo_url;
+
+        // CORRECCIÓN: Asegurar que la URL empiece con /uploads si no lo tiene
+        // Esto corrige el error 404 GET /evidencias/...
+        if (archivoUrl.startsWith('/evidencias/')) {
+          archivoUrl = `/uploads${archivoUrl}`;
+        }
+
         const backendBase = import.meta.env.VITE_BACKEND_URL || '/api';
-        const url = `${backendBase.replace('/api', '')}${response.data.archivo_url}`;
+        // Si backendBase es solo /api, lo eliminamos para dejar el path absoluto
+        // Si es una URL completa (https://...), mantenemos el dominio
+        const baseUrl = backendBase === '/api' ? '' : backendBase.replace('/api', '');
+
+        const url = `${baseUrl}${archivoUrl}`;
         window.open(url, '_blank');
       } else {
         setAlert({ show: true, type: 'warning', title: 'Aviso', message: 'No se encontró evidencia para esta solicitud' });
@@ -147,7 +158,7 @@ const Recalificaciones = () => {
               <tr>
                 <th>Estudiante (Anónimo)</th>
                 <th>Materia</th>
-                
+
                 <th>Aporte</th>
                 <th>Calif. Actual</th>
                 <th>Motivo</th>

@@ -16,9 +16,11 @@ services:
     restart: unless-stopped
     container_name: blindcheck-backend
     env_file:
-      - .env  
+      - .env
     depends_on:
       - mongo
+    volumes:
+      - ./backend/uploads:/app/uploads
 
   frontend:
     build:
