@@ -138,15 +138,19 @@ async def listar_materias_asignadas(current_user: Dict = Depends(get_current_use
     print(f"   Tipo: {type(docente.get('materias', []))}")
     
     materias_ids_str = docente.get("materias", [])
-    if materias_ids_str:
-        print(f"   Primer elemento tipo: {type(materias_ids_str[0])}")
-        print(f"   Primer elemento valor: {materias_ids_str[0]}")
+    materias_object_ids = []
     
-    # Los IDs en MongoDB son strings como 'CS-301', no ObjectIds
-    print(f"   IDs a buscar: {materias_ids_str}")
+    # Convertir strings a ObjectId
+    for m_id in materias_ids_str:
+        try:
+            materias_object_ids.append(ObjectId(m_id))
+        except Exception as e:
+            print(f"   ⚠️ ID inválido ignorado: {m_id} - Error: {e}")
+
+    print(f"   IDs a buscar (ObjectId): {len(materias_object_ids)}")
     
     materias = await materias_collection.find(
-        {"_id": {"$in": materias_ids_str}}
+        {"_id": {"$in": materias_object_ids}}
     ).to_list(length=100)
     
     print(f"   Materias encontradas: {len(materias)}")
