@@ -8,8 +8,7 @@ from seed_db import seed_data
 app = FastAPI(
     title="Sistema de Recalificación Anónima",
     description="API para gestión de recalificaciones académicas con anonimización",
-    version="1.0.0",
-    root_path="/api"
+    version="1.0.0"
 )
 
 @app.on_event("startup")
