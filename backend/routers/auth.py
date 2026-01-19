@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
-from fastapi.security import OAuth2PasswordRequestForm
+
 from datetime import timedelta
 from typing import Dict
 from models.schemas import LoginRequest, TokenResponse, UserRole, CambioPasswordForzado, SolicitudResetPassword
@@ -7,16 +7,13 @@ from database import estudiantes_collection, docentes_collection, subdecanos_col
 from utils.encryption import verify_password, decrypt_data, hash_password
 from utils.auth import create_access_token, get_current_user
 from config import settings
+from utils.logger import log_action
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, response: Response):
+async def login(login_data: LoginRequest, request: Request, response: Response):
     """Endpoint de inicio de sesión para todos los roles"""
-    
-    print(f"\n🔍 DEBUG LOGIN:")
-    print(f"   Email: {login_data.email}")
-    print(f"   Role: {login_data.role}")
     
     # Seleccionar la colección según el rol
     if login_data.role == UserRole.ESTUDIANTE:
@@ -32,23 +29,9 @@ async def login(login_data: LoginRequest, response: Response):
         )
     
     # Buscar usuario por email
-async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
-    """
-    Login para todos los roles (estudiante, docente, subdecano)
-    """
-    # Buscar en todas las colecciones
-    user = await estudiantes_collection.find_one({"email": form_data.username})
-    role = UserRole.ESTUDIANTE
+    user = await collection.find_one({"email": login_data.email})
     
-    if not user:
-        user = await docentes_collection.find_one({"email": form_data.username})
-        role = UserRole.DOCENTE
-        
-    if not user:
-        user = await subdecanos_collection.find_one({"email": form_data.username})
-        role = UserRole.SUBDECANO
-    
-    if not user or not verify_password(form_data.password, user["password"]):
+    if not user or not verify_password(login_data.password, user["password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos",
@@ -56,7 +39,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         )
     
     # Verificar si usuario está activo (para estudiantes y docentes)
-    if role in [UserRole.ESTUDIANTE, UserRole.DOCENTE] and not user.get("activo", True):
+    if login_data.role in [UserRole.ESTUDIANTE, UserRole.DOCENTE] and not user.get("activo", True):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario desactivado. Contacte al administración."
@@ -65,19 +48,21 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     # Crear token
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
-        data={"sub": str(user["_id"]), "role": role, "email": user["email"]},
+        data={"sub": str(user["_id"]), "role": login_data.role, "email": user["email"]},
         expires_delta=access_token_expires
     )
+    
+    # REGISTRAR LOG
+    client_ip = request.client.host if request.client else "Unknown"
+    await log_action(str(user["_id"]), login_data.role, "LOGIN", "Inicio de sesión exitoso", client_ip)
     
     response_data = {
         "access_token": access_token,
         "token_type": "bearer",
-        "role": login_data.role.value if hasattr(login_data.role, 'value') else str(login_data.role),
+        "role": login_data.role,
         "user_id": str(user["_id"]),
-        "primer_login": primer_login_value
+        "primer_login": user.get("primer_login", False)
     }
-    
-    print(f"   🔍 DEBUG - Respuesta enviada: {response_data}")
     
     return response_data
 
