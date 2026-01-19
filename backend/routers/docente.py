@@ -4,10 +4,13 @@ from bson import ObjectId
 from datetime import datetime, timezone
 import hashlib
 import os
+import aiofiles
 from pathlib import Path
 from PIL import Image, ImageFilter, ExifTags
 import io
 import base64
+import asyncio
+import functools
 from models.schemas import (
     DocenteUpdate, DocenteResponse,
     EvidenciaCreate, EvidenciaResponse,
@@ -169,9 +172,9 @@ async def subir_evidencia(
     
     # Guardar archivo
     file_path = UPLOAD_DIR / hashed_filename
-    with open(file_path, "wb") as buffer:
+    async with aiofiles.open(file_path, "wb") as buffer:
         content = await archivo.read()
-        buffer.write(content)
+        await buffer.write(content)
     
     # Guardar metadata en la base de datos
     materia = await materias_collection.find_one({"_id": materia_id})
@@ -230,9 +233,9 @@ async def subir_evidencia_temporal(
     
     # Guardar archivo temporal
     temp_path = TEMP_DIR / temp_filename
-    with open(temp_path, "wb") as buffer:
+    async with aiofiles.open(temp_path, "wb") as buffer:
         content = await archivo.read()
-        buffer.write(content)
+        await buffer.write(content)
     
     return {
         "temp_id": temp_id,
@@ -240,6 +243,77 @@ async def subir_evidencia_temporal(
         "preview_url": f"/uploads/temp/{temp_filename}",
         "message": "Imagen cargada. Marca el área del nombre para recortar."
     }
+
+def process_image_sync(temp_path, crop_area, user_id, estudiante_id, materia_id, grupo, aporte, temp_filename):
+    """Función síncrona para procesar imagen (CPU bound)"""
+    try:
+        # Abrir imagen
+        img = Image.open(temp_path)
+        
+        print(f"\n📷 DEBUG PROCESAMIENTO IMAGEN:")
+        print(f"   Dimensión original: {img.width}x{img.height}")
+        print(f"   Formato: {img.format}")
+        
+        # PASO 1: Corregir orientación EXIF primero
+        img = correct_image_orientation(img)
+        print(f"   Dimensión después de orientación: {img.width}x{img.height}")
+        
+        print(f"\n✂️ DEBUG RECORTE:")
+        print(f"   crop_area recibido: {crop_area}")
+        
+        # PASO 2: Si hay área para recortar
+        recortada = False
+        if crop_area and crop_area.get("width", 0) > 0 and crop_area.get("height", 0) > 0:
+            x = int(crop_area["x"])
+            y = int(crop_area["y"])
+            width = int(crop_area["width"])
+            height = int(crop_area["height"])
+            
+            print(f"   ✅ RECORTANDO - Eliminando área seleccionada y todo arriba")
+            
+            # Calcular desde dónde cortar: eliminar todo ARRIBA incluyendo el rectángulo
+            crop_from_y = y + height
+            
+            # Guardar imagen ANTES del recorte para comparar (temporal)
+            temp_before = TEMP_DIR / f"before_{temp_filename}"
+            img.save(temp_before)
+            
+            # Recortar imagen: (left, top, right, bottom)
+            img = img.crop((0, crop_from_y, img.width, img.height))
+            
+            # Guardar imagen DESPUÉS del recorte para comparar (temporal)
+            temp_after = TEMP_DIR / f"after_{temp_filename}"
+            img.save(temp_after)
+            
+            print(f"   ✅ Recorte completado. Nueva dimensión: {img.width}x{img.height}")
+            recortada = True
+        else:
+            print(f"   ⚠️ NO se recortará (área vacía o width=0)")
+        
+        # Generar nombre hasheado final
+        hash_input = f"{user_id}{estudiante_id}{materia_id}{grupo}{aporte}{datetime.now(timezone.utc).isoformat()}"
+        file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
+        file_extension = os.path.splitext(temp_filename)[1]
+        hashed_filename = f"{file_hash}{file_extension}"
+        
+        # Guardar imagen procesada
+        final_path = UPLOAD_DIR / hashed_filename
+        img.save(final_path)
+        
+        # Eliminar archivo temporal
+        if temp_path.exists():
+            temp_path.unlink()
+            
+        return {
+            "hashed_filename": hashed_filename,
+            "file_hash": file_hash,
+            "recortada": recortada
+        }
+    except Exception as e:
+        # Limpiar archivo temporal en caso de error
+        if temp_path.exists():
+            temp_path.unlink()
+        raise e
 
 @router.post("/evidencias/recortar")
 @router.post("/evidencias/recortar")
@@ -265,75 +339,22 @@ async def recortar_area_y_guardar(
     if not temp_path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo temporal no encontrado")
     
+    
     try:
-        # Abrir imagen
-        img = Image.open(temp_path)
+        # Ejecutar procesamiento de imagen (CPU bound) en thread pool
+        loop = asyncio.get_event_loop()
+        result_img = await loop.run_in_executor(
+            None, 
+            functools.partial(
+                process_image_sync,
+                temp_path, crop_area, current_user['user_id'], 
+                estudiante_id, materia_id, grupo, aporte, temp_filename
+            )
+        )
         
-        print(f"\n📷 DEBUG PROCESAMIENTO IMAGEN:")
-        print(f"   Dimensión original: {img.width}x{img.height}")
-        print(f"   Formato: {img.format}")
-        
-        # PASO 1: Corregir orientación EXIF primero
-        img = correct_image_orientation(img)
-        print(f"   Dimensión después de orientación: {img.width}x{img.height}")
-        
-        print(f"\n✂️ DEBUG RECORTE:")
-        print(f"   crop_area recibido: {crop_area}")
-        print(f"   Tipo: {type(crop_area)}")
-        if crop_area:
-            print(f"   x: {crop_area.get('x', 'N/A')}")
-            print(f"   y: {crop_area.get('y', 'N/A')}")
-            print(f"   Width: {crop_area.get('width', 0)}")
-            print(f"   Height: {crop_area.get('height', 0)}")
-        else:
-            print(f"   ⚠️ crop_area es None o vacío")
-        
-        # PASO 2: Si hay área para recortar
-        if crop_area and crop_area.get("width", 0) > 0 and crop_area.get("height", 0) > 0:
-            x = int(crop_area["x"])
-            y = int(crop_area["y"])
-            width = int(crop_area["width"])
-            height = int(crop_area["height"])
-            
-            print(f"   ✅ RECORTANDO - Eliminando área seleccionada y todo arriba")
-            print(f"   📏 Imagen original: {img.width}x{img.height}")
-            print(f"   📐 Área seleccionada para eliminar: x={x}, y={y}, width={width}, height={height}")
-            
-            # Calcular desde dónde cortar: eliminar todo ARRIBA incluyendo el rectángulo
-            crop_from_y = y + height
-            print(f"   ✂️ Cortando desde Y={crop_from_y} hasta el final")
-            print(f"   📍 Coordenadas de recorte: left=0, top={crop_from_y}, right={img.width}, bottom={img.height}")
-            
-            # Guardar imagen ANTES del recorte para comparar (temporal)
-            temp_before = TEMP_DIR / f"before_{temp_filename}"
-            img.save(temp_before)
-            print(f"   💾 Imagen ANTES guardada en: {temp_before}")
-            
-            # Recortar imagen: (left, top, right, bottom)
-            # Eliminar todo desde arriba (0) hasta el borde inferior del rectángulo
-            img = img.crop((0, crop_from_y, img.width, img.height))
-            
-            # Guardar imagen DESPUÉS del recorte para comparar (temporal)
-            temp_after = TEMP_DIR / f"after_{temp_filename}"
-            img.save(temp_after)
-            print(f"   💾 Imagen DESPUÉS guardada en: {temp_after}")
-            
-            print(f"   ✅ Recorte completado. Nueva dimensión: {img.width}x{img.height}")
-        else:
-            print(f"   ⚠️ NO se recortará (área vacía o width=0)")
-        
-        # Generar nombre hasheado final
-        hash_input = f"{current_user['user_id']}{estudiante_id}{materia_id}{grupo}{aporte}{datetime.now(timezone.utc).isoformat()}"
-        file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
-        file_extension = os.path.splitext(temp_filename)[1]
-        hashed_filename = f"{file_hash}{file_extension}"
-        
-        # Guardar imagen procesada
-        final_path = UPLOAD_DIR / hashed_filename
-        img.save(final_path)
-        
-        # Eliminar archivo temporal
-        temp_path.unlink()
+        hashed_filename = result_img["hashed_filename"]
+        file_hash = result_img["file_hash"]
+        recortada = result_img["recortada"]
         
         # Obtener datos del estudiante y materia
         materia = await materias_collection.find_one({"_id": materia_id})
@@ -352,7 +373,7 @@ async def recortar_area_y_guardar(
             "descripcion": descripcion,
             "archivo_nombre_hash": hashed_filename,
             "archivo_url": f"/uploads/evidencias/{hashed_filename}",
-            "recortada": crop_area is not None and crop_area.get("width", 0) > 0,
+            "recortada": recortada,
             "fecha_subida": datetime.now(timezone.utc)
         }
         
@@ -367,9 +388,6 @@ async def recortar_area_y_guardar(
         }
         
     except Exception as e:
-        # Limpiar archivo temporal en caso de error
-        if temp_path.exists():
-            temp_path.unlink()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al procesar imagen: {str(e)}")
 
 @router.get("/evidencias")

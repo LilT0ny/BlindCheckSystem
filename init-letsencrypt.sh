@@ -14,12 +14,12 @@ email="anjagoni@gmail.com"
 staging=1
 
 # --- MEJORA: Evitar interacción manual ---
-if [ -d "$data_path/conf/live/$domains" ]; then
+if [[ -d "$data_path/conf/live/$domains" ]]; then
   echo "### Ya existen certificados para $domains. Saltando inicialización..."
   exit 0
 fi
 
-if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
+if [[ ! -e "$data_path/conf/options-ssl-nginx.conf" ]] || [[ ! -e "$data_path/conf/ssl-dhparams.pem" ]]; then
   echo "### Descargando parámetros TLS recomendados..."
   mkdir -p "$data_path/conf"
   curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
@@ -49,7 +49,7 @@ case "$email" in
 esac
 
 staging_arg=""
-if [ $staging != "0" ]; then staging_arg="--staging"; fi
+if [[ $staging != "0" ]]; then staging_arg="--staging"; fi
 
 $COMPOSE run --rm --entrypoint "certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \

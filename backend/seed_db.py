@@ -6,7 +6,7 @@ from database import (
     materias_collection
 )
 from passlib.context import CryptContext
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -25,7 +25,7 @@ async def seed_data():
         "nombre": "Administrador",
         "apellido": "BlindCheck",
         "cedula": "1700000001",
-        "fecha_registro": datetime.utcnow()
+        "fecha_registro": datetime.now(timezone.utc)
     }
     
     # Buscamos por email para no duplicar

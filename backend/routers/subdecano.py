@@ -51,7 +51,7 @@ async def crear_docente(
         "materias": docente.materias,
         "activo": True,
         "primer_login": True,  # Debe cambiar contraseña en primer login
-        "fecha_registro": datetime.utcnow()
+        "fecha_registro": datetime.now(timezone.utc)
     }
     
     await docentes_collection.insert_one(nuevo_docente)
@@ -173,7 +173,7 @@ async def crear_estudiante(
         "materias_cursando": estudiante.materias_cursando,
         "activo": True,
         "primer_login": True,  # Debe cambiar contraseña en primer login
-        "fecha_registro": datetime.utcnow()
+        "fecha_registro": datetime.now(timezone.utc)
     }
     
     await estudiantes_collection.insert_one(nuevo_estudiante)
