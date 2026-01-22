@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY . .
 RUN npm install
+ENV VITE_BACKEND_URL=""
 RUN npm run build
 
 # Etapa 2: Servir con Nginx (Usando una imagen estable verificada)
