@@ -119,18 +119,18 @@ frontend/
 
 ## Conexión con Backend
 
-El frontend se comunica con el backend FastAPI a través de la siguiente configuración:
+El frontend se comunica con el backend FastAPI a través de:
 
-- API Base URL: `http://localhost:8000/api`
-- Autenticación: JWT Bearer Token
-- Interceptores de Axios para manejo de tokens y errores
+- API Base URL: `https://blindcheck.space/api` (En Prod)
+- **Autenticación**: `withCredentials: true` (Cookies HttpOnly automáticas).
+- Interceptores para manejo de errores (401 redirige a login).
 
 ## Características de Seguridad
 
-- Tokens JWT almacenados en localStorage
-- Rutas protegidas por autenticación y rol
-- Interceptores para refrescar sesión
-- Logout automático en caso de token inválido
+- **No Storage**: No se almacenan tokens sensibles en localStorage/sessionStorage.
+- **CSP**: Content Security Policy estricta configurada en Nginx.
+- **HTTPS**: Comunicación encriptada forzada.
+- Rutas protegidas por validación de sesión con backend.
 
 ## Próximas Funcionalidades
 

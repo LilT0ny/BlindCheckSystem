@@ -6,50 +6,39 @@ Sistema completo de gestión de recalificaciones académicas con anonimización 
 
 BlindCheck permite a estudiantes solicitar recalificaciones de forma anónima, donde subdecanos revisan y aprueban las solicitudes, y docentes califican sin conocer la identidad del estudiante.
 
+## 🚀 Despliegue (En Vivo)
+
+La aplicación está desplegada en una **VPS de Google Cloud Platform**.
+
+🔗 **URL del Sistema**: [https://blindcheck.space](https://blindcheck.space)
+
+---
+
 ## 🏗️ Arquitectura
 
 - **Backend**: FastAPI (Python)
-- **Frontend**: React + Vite
-- **Base de Datos**: MongoDB
-- **Autenticación**: JWT
-- **Cifrado**: Bcrypt + Fernet
+- **Frontend**: React + Vite (Nginx Server)
+- **Base de Datos**: MongoDB (Dockerized)
+- **Autenticación**: HttpOnly Secure Cookies (JWT)
+- **Infraestructura**: Docker Compose + Certbot (SSL)
 
-## 📋 Características Principales
+## 🔒 Seguridad (Hardening)
 
-### 👨‍🎓 Estudiante
-- ✅ Inicio de sesión seguro con credenciales cifradas
-- ✅ Dashboard con resumen de solicitudes
-- ✅ Crear solicitudes de recalificación (materia, GR, aporte, evidencia)
-- ✅ Ver estado de solicitudes en tiempo real
-- ✅ Ver detalles de calificación (notas de 2 profesores anónimos + promedio)
-- ✅ Recibir notificaciones del estado de solicitudes
-- ✅ Actualizar datos personales
+Hemos implementado controles estrictos para mitigar vulnerabilidades OWASP Top 10:
 
-### 👨‍🏫 Docente
-- ✅ Ver materias y grupos asignados
-- ✅ Subir evidencias por materia y tipo de aporte
-- ✅ Ver recalificaciones asignadas (estudiante anónimo)
-- ✅ Calificar con nota (0-10) y comentario justificativo
-- ✅ Acceso a evidencia del estudiante y del docente original
-- ✅ Actualizar perfil
-
-### 👔 Subdecano
-- ✅ Ver todas las solicitudes (datos anonimizados)
-- ✅ Aprobar/Rechazar solicitudes con motivo
-- ✅ Asignar docentes a solicitudes aprobadas
-- ✅ CRUD completo de docentes (solo materias/GR editables)
-- ✅ CRUD de estudiantes
-- ✅ Gestión de materias
-- ✅ Visualización con datos anonimizados
-
-## 🔒 Seguridad
-
-- Contraseñas hasheadas con **Bcrypt**
-- Tokens **JWT** con expiración
-- Datos sensibles cifrados con **Fernet**
-- Anonimización mediante hashing **MD5**
-- Validación de roles en cada endpoint
-- CORS configurado
+- **Autenticación Robusta**:
+    - Cookies `HttpOnly`, `Secure`, `SameSite=Lax` (Prevención total de robo de tokens vía XSS).
+    - Tokens JWT con expiración corta.
+- **Protección de Red y Headers**:
+    - **CORS Estricto**: Solo permite origen frontend.
+    - **Security Headers**: HSTS, Anti-Sniff, X-Frame-Options (DENY), CSP Estricto.
+    - **Rate Limiting**: Protección contra fuerza bruta en Login (5 req/min) usando `slowapi`.
+- **Frontend Security**:
+    - **Content Security Policy (CSP)**: Configurado en Nginx para mitigar XSS e inyecciones.
+    - Sanitización de entradas.
+- **Datos**:
+    - Cifrado de contraseñas con **Bcrypt**.
+    - Anonimización de usuarios con Hashing.
 
 ## 🎨 Diseño
 

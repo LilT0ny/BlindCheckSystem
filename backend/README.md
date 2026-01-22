@@ -4,11 +4,12 @@
 Backend del sistema de recalificación anónima desarrollado con FastAPI, MongoDB y sistema de cifrado de datos.
 
 ## Características
-- Autenticación con JWT
-- Cifrado de contraseñas con bcrypt
-- Anonimización de usuarios
-- Gestión de roles (Estudiante, Docente, Subdecano)
-- Base de datos MongoDB
+- **Autenticación Segura**: Cookies HttpOnly + JWT.
+- **Protección**: Rate Limiting (SlowAPI) contra fuerza bruta.
+- **Headers**: Middleware de seguridad (HSTS, CSP headers).
+- Cifrado de contraseñas con bcrypt.
+- Anonimización de usuarios.
+- Base de datos MongoDB.
 
 ## Instalación
 
