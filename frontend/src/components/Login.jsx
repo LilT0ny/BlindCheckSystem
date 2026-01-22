@@ -46,22 +46,21 @@ const Login = () => {
 
     try {
       const response = await api.post('/auth/login', formData);
-      const { access_token, role, user_id, primer_login } = response.data;
+      const { role, user_id, primer_login } = response.data;
 
       // Guardar datos del login
-      setLoginData({ id: user_id, email: formData.email, role, access_token });
+      setLoginData({ id: user_id, email: formData.email, role });
 
       // Si es primer login, mostrar modal de cambio de contraseña
       if (primer_login) {
-        // Necesitamos guardar el token para que la petición de cambio de contraseña funcione
-        sessionStorage.setItem('token', access_token);
+        // El token ya está en la cookie HttpOnly
         setShowCambiarPassword(true);
         setLoading(false);
         return;
       }
 
-      // Login normal - guardar token en memoria
-      login({ id: user_id, email: formData.email, role }, access_token);
+      // Login normal
+      login({ id: user_id, email: formData.email, role });
 
       // Redirigir según el rol
       switch (role) {
@@ -88,8 +87,7 @@ const Login = () => {
     // Después de cambiar la contraseña, hacer login automáticamente
     if (loginData) {
       login(
-        { id: loginData.id, email: loginData.email, role: loginData.role },
-        loginData.access_token
+        { id: loginData.id, email: loginData.email, role: loginData.role }
       );
 
       // Redirigir según el rol

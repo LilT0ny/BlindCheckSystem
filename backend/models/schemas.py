@@ -125,9 +125,8 @@ class LoginRequest(BaseModel):
     password: str
     role: UserRole
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class LoginResponse(BaseModel):
+    message: str = "Login successful"
     role: UserRole
     user_id: str
     primer_login: bool = False

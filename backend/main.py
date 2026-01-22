@@ -4,6 +4,13 @@ from fastapi.staticfiles import StaticFiles
 from routers import auth, estudiante, subdecano, docente
 from pathlib import Path
 from seed_db import seed_data
+from config import settings
+from utils.limiter import limiter
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+from fastapi import Request
 
 app = FastAPI(
     title="Sistema de Recalificación Anónima",
@@ -17,10 +24,27 @@ async def startup_event():
     await seed_data()
 
 # Configuración de CORS
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Rate Limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse({"detail": "Rate limit exceeded"}, status_code=429))
+app.add_middleware(SlowAPIMiddleware)
+
+# Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    # Permitir todos los orígenes para evitar dolores de cabeza con CORS
-    allow_origin_regex=".*", 
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

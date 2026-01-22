@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
 
 from datetime import timedelta
 from typing import Dict
-from models.schemas import LoginRequest, TokenResponse, UserRole, CambioPasswordForzado, SolicitudResetPassword
+from models.schemas import LoginRequest, LoginResponse, UserRole, CambioPasswordForzado, SolicitudResetPassword
 from database import estudiantes_collection, docentes_collection, subdecanos_collection, reset_password_collection
+from utils.limiter import limiter
 from utils.encryption import verify_password, decrypt_data, hash_password
 from utils.auth import create_access_token, get_current_user
 from config import settings
@@ -11,7 +12,8 @@ from utils.logger import log_action
 
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(login_data: LoginRequest, request: Request, response: Response):
     """Endpoint de inicio de sesión para todos los roles"""
     
@@ -56,9 +58,17 @@ async def login(login_data: LoginRequest, request: Request, response: Response):
     client_ip = request.client.host if request.client else "Unknown"
     await log_action(str(user["_id"]), login_data.role, "LOGIN", "Inicio de sesión exitoso", client_ip)
     
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.access_token_expire_minutes * 60
+    )
+    
     response_data = {
-        "access_token": access_token,
-        "token_type": "bearer",
+        "message": "Inicio de sesión exitoso",
         "role": login_data.role,
         "user_id": str(user["_id"]),
         "primer_login": user.get("primer_login", False)
@@ -67,7 +77,8 @@ async def login(login_data: LoginRequest, request: Request, response: Response):
     return response_data
 
 @router.post("/verify-token")
-async def verify_token_endpoint(current_user: Dict = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def verify_token_endpoint(request: Request, current_user: Dict = Depends(get_current_user)):
     """Verifica si un token es válido"""
     return {"valid": True, "user": current_user}
 
@@ -130,7 +141,8 @@ async def cambiar_password_forzado(
     return {"message": "Contraseña actualizada exitosamente"}
 
 @router.post("/solicitar-reset-password")
-async def solicitar_reset_password(datos: SolicitudResetPassword):
+@limiter.limit("3/minute")
+async def solicitar_reset_password(datos: SolicitudResetPassword, request: Request):
     """Crea una solicitud de reset de contraseña"""
     from datetime import datetime
     

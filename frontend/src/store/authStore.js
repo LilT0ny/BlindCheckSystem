@@ -1,46 +1,47 @@
 import { create } from 'zustand';
+import api from '../services/api';
 
 export const useAuthStore = create((set) => ({
   user: null,
-  token: null,
   isAuthenticated: false,
-  
-  login: (userData, token) => {
-    sessionStorage.setItem('token', token);
+
+  login: (userData) => {
     sessionStorage.setItem('user', JSON.stringify(userData));
-    set({ 
-      user: userData, 
-      token, 
-      isAuthenticated: true 
+    set({
+      user: userData,
+      isAuthenticated: true
     });
   },
-  
-  logout: () => {
-    sessionStorage.removeItem('token');
+
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
     sessionStorage.removeItem('user');
-    set({ 
-      user: null, 
-      token: null, 
-      isAuthenticated: false 
+    set({
+      user: null,
+      isAuthenticated: false
     });
   },
-  
+
   updateUser: (userData) => {
     sessionStorage.setItem('user', JSON.stringify(userData));
     set({ user: userData });
   },
 
-  // Restaurar sesión desde sessionStorage al cargar
-  restoreSession: () => {
-    const token = sessionStorage.getItem('token');
-    const userStr = sessionStorage.getItem('user');
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        set({ user, token, isAuthenticated: true });
-      } catch (error) {
-        sessionStorage.clear();
-      }
+  // Restaurar sesión verificando cookie con el backend
+  restoreSession: async () => {
+    try {
+      const response = await api.get('/auth/me');
+      // response.data es el usuario directmente según backend logic
+      const user = response.data;
+      sessionStorage.setItem('user', JSON.stringify(user));
+      set({ user, isAuthenticated: true });
+    } catch (error) {
+      sessionStorage.removeItem('user');
+      set({ user: null, isAuthenticated: false });
     }
   }
 }));

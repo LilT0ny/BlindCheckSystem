@@ -2,54 +2,24 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL || '/api',
+  withCredentials: true,
   headers: {
-    // No establecer Content-Type por defecto, dejar que axios lo maneje
+    // No establecer Content-Type por defecto
   }
 });
-
-// Interceptor para agregar token a las peticiones
-api.interceptors.request.use(
-  (config) => {
-    // Primero intentar desde sessionStorage (compatibilidad con código anterior)
-    let token = sessionStorage.getItem('token');
-
-    // Si no hay en sessionStorage, intentar desde Zustand
-    if (!token) {
-      try {
-        const authStoreModule = require('../store/authStore');
-        token = authStoreModule.useAuthStore.getState().token;
-      } catch (e) {
-        // Si falla, continuar sin token
-      }
-    }
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Interceptor para manejar errores de autenticación
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      // No need to remove token, it's a cookie.
 
-      // También limpiar Zustand si está disponible
-      try {
-        const authStoreModule = require('../store/authStore');
-        authStoreModule.useAuthStore.getState().logout();
-      } catch (e) {
-        // Continuar si falla
+      // Redirect to login if not already there
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
       }
-
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
