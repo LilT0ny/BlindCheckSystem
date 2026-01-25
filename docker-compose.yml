@@ -12,7 +12,8 @@ services:
 
   auth-service:
     build:
-      context: ./microservices/auth
+      context: .
+      dockerfile: microservices/auth/Dockerfile
     restart: unless-stopped
     container_name: blindcheck-auth
     env_file:
@@ -24,7 +25,8 @@ services:
 
   student-service:
     build:
-      context: ./microservices/student
+      context: .
+      dockerfile: microservices/student/Dockerfile
     restart: unless-stopped
     container_name: blindcheck-student
     env_file:
@@ -38,7 +40,8 @@ services:
 
   teacher-service:
     build:
-      context: ./microservices/teacher
+      context: .
+      dockerfile: microservices/teacher/Dockerfile
     restart: unless-stopped
     container_name: blindcheck-teacher
     env_file:
@@ -52,7 +55,8 @@ services:
 
   admin-service:
     build:
-      context: ./microservices/admin
+      context: .
+      dockerfile: microservices/admin/Dockerfile
     restart: unless-stopped
     container_name: blindcheck-admin
     env_file:
