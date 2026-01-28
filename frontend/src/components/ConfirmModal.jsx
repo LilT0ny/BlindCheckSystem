@@ -1,6 +1,9 @@
 import React from 'react';
 import './ConfirmModal.css';
-
+// A modal component to confirm user actions with customizable text and styles
+// Props:
+// - show: boolean to control visibility
+// - title: string for the modal title
 const ConfirmModal = ({ show, title, message, onConfirm, onCancel, confirmText = 'Confirmar', cancelText = 'Cancelar', type = 'warning' }) => {
   if (!show) return null;
 
