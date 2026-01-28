@@ -224,3 +224,4 @@ Para soporte y preguntas, contacta al equipo de desarrollo.
 ---
 
 **Desarrollado con ❤️ usando FastAPI y React**
+**Bit a Bit**

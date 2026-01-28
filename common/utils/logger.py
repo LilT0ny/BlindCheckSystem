@@ -2,6 +2,7 @@ from datetime import datetime
 from database import logs_collection
 from models.schemas import LogCreate
 
+# =============== REGISTRO DE LOGS ===============
 async def log_action(usuario_id: str, rol: str, accion: str, detalle: str = None, ip: str = None):
     """
     Registra una acción en la colección de logs.
