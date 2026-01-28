@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import './AlertModal.css';
 
+/* modal component */
 const AlertModal = ({ show, type, title, message, onClose }) => {
   if (!show) return null;
 
