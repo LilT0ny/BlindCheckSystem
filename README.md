@@ -219,9 +219,9 @@ Este proyecto está bajo la Licencia MIT.
 Sistema desarrollado para la gestión académica universitaria.
 
 ## 📞 Soporte
-
 Para soporte y preguntas, contacta al equipo de desarrollo.
 
 ---
 
 **Desarrollado con ❤️ usando FastAPI y React**
+**Bit a Bit**

@@ -4,6 +4,7 @@ from config import settings
 import base64
 import hashlib
 
+# =============== ENCRIPTACIÓN Y HASHING ===============
 # Contexto para hashing de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

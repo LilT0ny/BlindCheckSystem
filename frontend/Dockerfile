@@ -1,3 +1,4 @@
+# =============== FRONTEND ===============
 # Etapa 1: Construcción
 FROM node:18-alpine AS build
 WORKDIR /app

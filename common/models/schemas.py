@@ -35,6 +35,7 @@ class EstudianteBase(BaseModel):
 class EstudianteCreate(EstudianteBase):
     password: str
 
+# =============== Estudiante creado por Subdecano ===============
 class EstudianteCreateBySubdecano(BaseModel):
     email: EmailStr
     nombre: str
@@ -74,6 +75,7 @@ class DocenteCreate(DocenteBase):
     password: str
     materias: List[str] = []
 
+# =============== Docente creado por Subdecano ===============
 class DocenteCreateBySubdecano(BaseModel):
     email: EmailStr
     nombre: str
