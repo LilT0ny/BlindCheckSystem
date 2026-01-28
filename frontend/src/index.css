@@ -23,7 +23,7 @@
   --color-success: #10B981;
   /* Éxito */
   --color-warning: #F59E0B;
-  /* Advertencia */
+  /* Advertencia  */
   --color-error: #EF4444;
   /* Error */
 
@@ -33,7 +33,7 @@
   --separator-color: #D1D5DB;
   /* Separadores */
   --disabled-color: #9CA3AF;
-  /* Deshabilitado */
+  /* Deshabilitado  */
 
   /* Globales */
   --border-radius: 0.5rem;
@@ -47,30 +47,30 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1rem ;
 }
 
-/* Layout Utility for "2/4 width centered" */
+/* Layout Utility for "2/4 width centered  " */
 .container-centered {
   width: 100%;
   max-width: 50%;
-  /* 2/4 de la pantalla aproximadamente */
+  /* 2/4 de la pantalla aproxima */
   margin: 0 auto;
-  /* Centrado */
+  /* Centrado   */
   padding: 1rem;
 }
 
 @media (max-width: 1024px) {
   .container-centered {
     max-width: 75%;
-    /* Un poco más ancho en tablets */
+    /* Un poco más ancho en tablets  */
   }
 }
 
 @media (max-width: 768px) {
   .container-centered {
     max-width: 95%;
-    /* Casi full width en móviles */
+    /* Casi full width en móviles   */
   }
 }
 
@@ -89,7 +89,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* -- Tipografía -- */
+/* -- Tipografía h1-- */
 h1,
 h2,
 h3,
