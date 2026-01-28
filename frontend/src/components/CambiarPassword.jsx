@@ -4,6 +4,7 @@ import AlertModal from './AlertModal';
 import api from '../services/api';
 import './CambiarPassword.css';
 
+/* modal component for changing password */
 const CambiarPassword = ({ onPasswordChanged }) => {
   const [passwordNueva, setPasswordNueva] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
